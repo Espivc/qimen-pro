@@ -1,702 +1,363 @@
 """
-🔮 Qi Men Pro v2.0 - Full Version
-Comprehensive QMDJ & BaZi Integration System
+🌟 Qi Men Pro v2.0
+QMDJ + BaZi Integrated Analysis System
+
+Main Dashboard
 """
 
 import streamlit as st
-import pandas as pd
-import json
-from datetime import datetime
-import os
+from datetime import datetime, timedelta
+import sys
 from pathlib import Path
 
-# Import configuration
-from config import *
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
 
-# ============================================================================
-# INITIALIZATION & SETUP
-# ============================================================================
+from config import APP_TITLE, COLORS, ELEMENT_EMOJI, PALACE_INFO, LUO_SHU_GRID
+from utils.bazi_profile import load_profile, DAY_MASTERS, TEN_GOD_PROFILES
+from utils.database import get_recent_records, get_statistics, init_database
+from utils.calculations import generate_chart
+from utils.language import get_lang
 
-def init_app():
-    """Initialize app with page config and session state"""
-    st.set_page_config(
-        page_title=APP_TITLE,
-        page_icon="🔮",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+# Page configuration
+st.set_page_config(
+    page_title="Qi Men Pro v2.0",
+    page_icon="🌟",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Load custom CSS
+def load_css():
+    css_file = Path(__file__).parent / "assets" / "style.css"
+    if css_file.exists():
+        with open(css_file) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     
-    # Initialize session state
-    if 'user_profile' not in st.session_state:
-        st.session_state.user_profile = load_user_profile()
-    if 'current_chart' not in st.session_state:
-        st.session_state.current_chart = None
-    if 'history' not in st.session_state:
-        st.session_state.history = load_history()
-
-def apply_custom_css():
-    """Apply dark theme with gold accents"""
+    # Additional inline styles for dark theme
     st.markdown("""
     <style>
-    /* Main theme colors */
-    :root {
-        --primary-gold: #FFD700;
-        --dark-bg: #1E1E1E;
-        --card-bg: #2D2D2D;
-    }
-    
-    /* Streamlit overrides */
-    .stApp {
-        background-color: var(--dark-bg);
-    }
-    
-    /* Headers */
-    h1, h2, h3 {
-        color: var(--primary-gold) !important;
-    }
-    
-    /* Cards */
-    .element-container {
-        background-color: var(--card-bg);
-        border-radius: 10px;
-        padding: 10px;
-    }
-    
-    /* Buttons */
-    .stButton>button {
-        background-color: var(--primary-gold);
-        color: black;
-        border-radius: 5px;
-        font-weight: bold;
-    }
-    
-    /* Mobile optimization */
-    @media (max-width: 768px) {
-        .stButton>button {
-            width: 100%;
-            margin: 5px 0;
+        .stApp {
+            background-color: #1a1a2e;
         }
-    }
+        .main .block-container {
+            padding-top: 2rem;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #16213e;
+        }
+        [data-testid="stSidebar"] * {
+            color: #e0e0e0 !important;
+        }
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3 {
+            color: #d4af37 !important;
+        }
+        [data-testid="stSidebar"] label {
+            color: #b8b8b8 !important;
+        }
+        [data-testid="stSidebar"] .stRadio label span {
+            color: #e0e0e0 !important;
+        }
+        h1, h2, h3 {
+            color: #d4af37 !important;
+        }
+        .stMetric label {
+            color: #b8b8b8 !important;
+        }
+        .stMetric [data-testid="stMetricValue"] {
+            color: #d4af37 !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
-# ============================================================================
-# DATA MANAGEMENT
-# ============================================================================
+load_css()
 
-def load_user_profile():
-    """Load user's BaZi profile"""
-    if os.path.exists(PROFILE_PATH):
-        try:
-            with open(PROFILE_PATH, 'r') as f:
-                return json.load(f)
-        except:
-            return get_default_profile()
-    return get_default_profile()
+# Initialize database
+init_database()
 
-def save_user_profile(profile):
-    """Save user's BaZi profile"""
-    os.makedirs(os.path.dirname(PROFILE_PATH), exist_ok=True)
-    with open(PROFILE_PATH, 'w') as f:
-        json.dump(profile, f, indent=2)
-    st.session_state.user_profile = profile
+# Initialize session state
+if 'profile' not in st.session_state:
+    st.session_state.profile = load_profile()
+if 'current_chart' not in st.session_state:
+    st.session_state.current_chart = None
+if 'selected_palace' not in st.session_state:
+    st.session_state.selected_palace = None
+if 'lang_mode' not in st.session_state:
+    st.session_state.lang_mode = "mixed"
 
-def get_default_profile():
-    """Default BaZi profile structure"""
-    return {
-        "day_master": "Geng",
-        "element": "Metal",
-        "polarity": "Yang",
-        "strength": "Weak",
-        "useful_gods": ["Earth", "Metal"],
-        "unfavorable": ["Fire"],
-        "profile_type": "Pioneer (Indirect Wealth)",
-        "special_structures": {
-            "wealth_vault": True,
-            "nobleman_present": False
-        }
+# Initialize language helper
+L = get_lang(st.session_state.lang_mode)
+
+def get_element_color(element: str) -> str:
+    """Get color for an element"""
+    colors = {
+        "Wood": "#4CAF50",
+        "Fire": "#F44336",
+        "Earth": "#8D6E63",
+        "Metal": "#BDBDBD",
+        "Water": "#2196F3"
     }
+    return colors.get(element, "#ffffff")
 
-def load_history():
-    """Load ML tracking database"""
-    if os.path.exists(DB_PATH):
-        try:
-            return pd.read_csv(DB_PATH)
-        except:
-            return create_empty_history()
-    return create_empty_history()
-
-def create_empty_history():
-    """Create empty history DataFrame"""
-    return pd.DataFrame(columns=[
-        'Date', 'Time', 'Palace', 'Formation', 
-        'QMDJ_Score', 'BaZi_Score', 'Verdict', 
-        'Action', 'Outcome'
-    ])
-
-def save_to_history(chart_data):
-    """Save chart analysis to ML database"""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+def render_profile_card():
+    """Render the BaZi profile summary card"""
+    profile = st.session_state.profile
     
-    new_row = pd.DataFrame([{
-        'Date': chart_data['date'],
-        'Time': chart_data['time'],
-        'Palace': chart_data['palace'],
-        'Formation': chart_data['formation'],
-        'QMDJ_Score': chart_data['qmdj_score'],
-        'BaZi_Score': chart_data['bazi_score'],
-        'Verdict': chart_data['verdict'],
-        'Action': chart_data['action'],
-        'Outcome': 'PENDING'
-    }])
-    
-    history = load_history()
-    history = pd.concat([history, new_row], ignore_index=True)
-    history.to_csv(DB_PATH, index=False)
-    st.session_state.history = history
-
-# ============================================================================
-# QMDJ CALCULATION ENGINE (Placeholder)
-# ============================================================================
-
-def generate_qmdj_chart(date_str, time_str, palace_num):
-    """
-    Generate QMDJ chart data
-    NOTE: This is a placeholder. Replace with actual kinqimen library calls
-    """
-    
-    # Placeholder data matching Universal Schema v2.0
-    chart = {
-        "schema_version": "2.0",
-        "metadata": {
-            "date_time": f"{date_str} {time_str}",
-            "timezone": DEFAULT_TIMEZONE,
-            "method": "Chai Bu",
-            "purpose": "Strategic",
-            "analysis_type": "QMDJ_BAZI_INTEGRATED"
-        },
-        "qmdj_data": {
-            "chart_type": "Hour",
-            "structure": "Yang Dun",
-            "ju_number": 5,
-            "palace_analyzed": {
-                "name": get_palace_name(palace_num),
-                "number": palace_num,
-                "direction": get_palace_direction(palace_num),
-                "palace_element": get_palace_element(palace_num)
-            },
-            "components": {
-                "heaven_stem": {
-                    "character": "Geng",
-                    "element": "Metal",
-                    "polarity": "Yang",
-                    "strength_in_palace": "Prosperous",
-                    "strength_score": 2
-                },
-                "earth_stem": {
-                    "character": "Wu",
-                    "element": "Earth",
-                    "polarity": "Yang",
-                    "strength_in_palace": "Timely",
-                    "strength_score": 3
-                },
-                "door": {
-                    "name": "Life",
-                    "element": "Earth",
-                    "category": "Auspicious",
-                    "strength_in_palace": "Prosperous",
-                    "strength_score": 2
-                },
-                "star": {
-                    "name": "Heart",
-                    "element": "Metal",
-                    "category": "Auspicious",
-                    "strength_in_palace": "Timely",
-                    "strength_score": 3
-                },
-                "deity": {
-                    "name": "Chief",
-                    "nature": "Auspicious",
-                    "function": "Leadership and authority"
-                }
-            },
-            "formation": {
-                "primary_formation": {
-                    "name": "Flying Dragon in Sky",
-                    "category": "Auspicious",
-                    "source_book": "#64",
-                    "outcome_pattern": "Great success with timing"
-                }
-            }
-        },
-        "bazi_data": st.session_state.user_profile,
-        "synthesis": calculate_synthesis(palace_num)
-    }
-    
-    return chart
-
-def calculate_synthesis(palace_num):
-    """Calculate combined QMDJ + BaZi scores"""
-    # Placeholder scoring logic
-    qmdj_score = min(10, max(1, 5 + (palace_num % 3)))
-    bazi_score = min(10, max(1, 6 + (palace_num % 4)))
-    combined = int((qmdj_score + bazi_score) / 2)
-    
-    verdicts = {
-        (8, 10): "HIGHLY AUSPICIOUS",
-        (6, 7): "AUSPICIOUS",
-        (4, 5): "NEUTRAL",
-        (2, 3): "INAUSPICIOUS",
-        (1, 1): "HIGHLY INAUSPICIOUS"
-    }
-    
-    verdict = "NEUTRAL"
-    for (min_s, max_s), v in verdicts.items():
-        if min_s <= combined <= max_s:
-            verdict = v
-            break
-    
-    return {
-        "qmdj_score": qmdj_score,
-        "bazi_alignment_score": bazi_score,
-        "combined_verdict_score": combined,
-        "verdict": verdict,
-        "confidence": "MEDIUM",
-        "primary_action": "Proceed with careful planning and timing",
-        "timing_recommendation": {
-            "optimal_hour": "Wu Hour (11am-1pm)",
-            "avoid_hour": "Zi Hour (11pm-1am)"
-        }
-    }
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-def get_palace_name(num):
-    """Convert palace number to name"""
-    names = {1: "Kan", 2: "Kun", 3: "Zhen", 4: "Xun", 5: "Center",
-             6: "Qian", 7: "Dui", 8: "Gen", 9: "Li"}
-    return names.get(num, "Center")
-
-def get_palace_direction(num):
-    """Get palace direction"""
-    directions = {1: "N", 2: "SW", 3: "E", 4: "SE", 5: "Center",
-                  6: "NW", 7: "W", 8: "NE", 9: "S"}
-    return directions.get(num, "Center")
-
-def get_palace_element(num):
-    """Get palace element"""
-    elements = {1: "Water", 2: "Earth", 3: "Wood", 4: "Wood", 5: "Earth",
-                6: "Metal", 7: "Metal", 8: "Earth", 9: "Fire"}
-    return elements.get(num, "Earth")
-
-def format_chart_for_display(chart):
-    """Format chart data for UI display"""
-    qmdj = chart['qmdj_data']
-    synth = chart['synthesis']
-    
-    return f"""
-    ### 📊 Chart Analysis
-    
-    **Palace:** {qmdj['palace_analyzed']['name']} ({qmdj['palace_analyzed']['direction']})  
-    **Formation:** {qmdj['formation']['primary_formation']['name']}
-    
-    **Components:**
-    - Heaven Stem: {qmdj['components']['heaven_stem']['character']} ({qmdj['components']['heaven_stem']['element']})
-    - Door: {qmdj['components']['door']['name']}
-    - Star: {qmdj['components']['star']['name']}
-    - Deity: {qmdj['components']['deity']['name']}
-    
-    **Scores:**
-    - QMDJ Score: {synth['qmdj_score']}/10
-    - BaZi Alignment: {synth['bazi_alignment_score']}/10
-    - **Combined Verdict: {synth['verdict']}** ({synth['combined_verdict_score']}/10)
-    
-    **Recommended Action:** {synth['primary_action']}
-    """
-
-# ============================================================================
-# PAGE: DASHBOARD
-# ============================================================================
-
-def page_dashboard():
-    """Main dashboard page"""
-    st.title("🔮 Qi Men Pro Dashboard")
-    
-    profile = st.session_state.user_profile
-    
-    # User Profile Card
-    with st.container():
-        st.subheader("👤 Your BaZi Profile")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Day Master", profile['day_master'])
-            st.caption(f"{profile['polarity']} {profile['element']}")
-        
-        with col2:
-            st.metric("Strength", profile['strength'])
-            emoji = TEN_GOD_PROFILES.get(profile['profile_type'], {}).get('emoji', '🎯')
-            st.caption(f"{emoji} {profile['profile_type']}")
-        
-        with col3:
-            st.metric("Useful Gods", ", ".join(profile['useful_gods']))
-            st.caption(f"Avoid: {profile['unfavorable'][0]}")
-    
-    st.divider()
-    
-    # Recent Activity
-    st.subheader("📈 Recent Activity")
-    history = st.session_state.history
-    
-    if len(history) > 0:
-        recent = history.tail(5).sort_values('Date', ascending=False)
-        st.dataframe(recent[['Date', 'Palace', 'Verdict', 'Action']], 
-                     use_container_width=True, hide_index=True)
+    # Handle both old (dict) and new (string) day_master formats
+    dm = profile.get("day_master", "Geng")
+    if isinstance(dm, dict):
+        # Old format
+        chinese = dm.get("chinese", "庚")
+        pinyin = dm.get("pinyin", "Geng")
+        element = dm.get("element", "Metal")
+        polarity = dm.get("polarity", "Yang")
     else:
-        st.info("No charts generated yet. Go to Chart Generator to create your first analysis!")
+        # New format - day_master is a string
+        pinyin = dm
+        chinese = profile.get("chinese", "庚")
+        element = profile.get("element", "Metal")
+        polarity = profile.get("polarity", "Yang")
     
-    # Quick Stats
-    if len(history) > 0:
-        st.divider()
-        st.subheader("📊 Statistics")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Charts", len(history))
-        with col2:
-            auspicious = len(history[history['Verdict'].str.contains('AUSPICIOUS', na=False)])
-            st.metric("Auspicious", auspicious)
-        with col3:
-            avg_qmdj = history['QMDJ_Score'].mean()
-            st.metric("Avg QMDJ Score", f"{avg_qmdj:.1f}")
-        with col4:
-            avg_bazi = history['BaZi_Score'].mean()
-            st.metric("Avg BaZi Score", f"{avg_bazi:.1f}")
-
-# ============================================================================
-# PAGE: CHART GENERATOR
-# ============================================================================
-
-def page_chart_generator():
-    """Chart generation page"""
-    st.title("🎯 Chart Generator")
+    # Handle both old (dict) and new (list) useful_gods formats
+    useful = profile.get("useful_gods", ["Earth", "Metal"])
+    if isinstance(useful, dict):
+        primary_ug = useful.get("primary", "Earth")
+        secondary_ug = useful.get("secondary", "Metal")
+    elif isinstance(useful, list) and len(useful) >= 2:
+        primary_ug = useful[0]
+        secondary_ug = useful[1]
+    elif isinstance(useful, list) and len(useful) == 1:
+        primary_ug = useful[0]
+        secondary_ug = useful[0]
+    else:
+        primary_ug = "Earth"
+        secondary_ug = "Metal"
     
-    # Input Section
+    special = profile.get("special_structures", {})
+    profile_name = profile.get("profile", "Pioneer (Indirect Wealth)")
+    profile_emoji = profile.get("profile_emoji", "🎯")
+    strength = profile.get("strength", "Weak")
+    
+    element_color = get_element_color(element)
+    
+    # Get mixed language strings
+    strength_text = L.get("strength") if st.session_state.lang_mode == "mixed" else "Strength"
+    useful_text = L.get("useful_god") if st.session_state.lang_mode == "mixed" else "Useful Gods"
+    profile_text = L.get("profile") if st.session_state.lang_mode == "mixed" else "Profile"
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, transparent 100%); 
+                border: 1px solid rgba(212, 175, 55, 0.25); 
+                border-radius: 12px; 
+                padding: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <span style="font-size: 2.5rem;">{chinese}</span>
+            <div>
+                <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600;">
+                    {pinyin} {L.element(element)} ({L.get('yang') if polarity == 'Yang' else L.get('yin')})
+                </div>
+                <div style="color: #b8b8b8; font-size: 0.9rem;">
+                    {strength_text}: {L.strength(strength)}
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <span style="font-size: 0.85rem; color: #b8b8b8;">{useful_text}:</span>
+            <span style="background: {get_element_color(primary_ug)}22; 
+                        color: {get_element_color(primary_ug)}; 
+                        padding: 2px 10px; border-radius: 12px; font-size: 0.8rem;">
+                {ELEMENT_EMOJI.get(primary_ug, '')} {L.element(primary_ug)}
+            </span>
+            <span style="background: {get_element_color(secondary_ug)}22; 
+                        color: {get_element_color(secondary_ug)}; 
+                        padding: 2px 10px; border-radius: 12px; font-size: 0.8rem;">
+                {ELEMENT_EMOJI.get(secondary_ug, '')} {L.element(secondary_ug)}
+            </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.85rem; color: #b8b8b8;">{profile_text}:</span>
+            <span style="color: #d4af37; font-weight: 500;">
+                {profile_emoji} {profile_name}
+            </span>
+        </div>
+        {"<div style='margin-top: 0.5rem;'><span style='background: rgba(212, 175, 55, 0.2); color: #d4af37; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem;'>💰 " + L.get('wealth_vault') + "</span></div>" if special.get('wealth_vault') else ""}
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_quick_chart():
+    """Render quick chart generation section"""
     col1, col2 = st.columns(2)
     
     with col1:
-        date_input = st.date_input("📅 Date", datetime.now())
-        date_str = date_input.strftime("%Y-%m-%d")
+        selected_date = st.date_input(
+            f"📅 {L.get('date')}",
+            value=datetime.now().date(),
+            key="quick_date"
+        )
     
     with col2:
-        time_input = st.time_input("⏰ Time", datetime.now())
-        time_str = time_input.strftime("%H:%M")
+        selected_time = st.time_input(
+            f"🕐 {L.get('time')}",
+            value=datetime.now().time(),
+            key="quick_time"
+        )
     
-    # Palace Selection (9-Grid Visual)
-    st.subheader("🎲 Select Palace (1-9)")
+    if st.button(f"🔮 {L.get('generate')}", use_container_width=True, type="primary"):
+        chart_dt = datetime.combine(selected_date, selected_time)
+        st.session_state.current_chart = generate_chart(chart_dt)
+        st.session_state.selected_palace = None
+        st.success("Chart generated! Go to Chart page for full view.")
+        
+def render_recent_analyses():
+    """Render recent analyses section"""
+    records = get_recent_records(5)
     
-    # Create 3x3 grid
-    palace_grid = [
-        [4, 9, 2],
-        [3, 5, 7],
-        [8, 1, 6]
-    ]
-    
-    cols = st.columns(3)
-    selected_palace = None
-    
-    for row_idx, row in enumerate(palace_grid):
-        for col_idx, palace_num in enumerate(row):
-            with cols[col_idx]:
-                if st.button(f"Palace {palace_num}\n{get_palace_name(palace_num)}", 
-                            key=f"palace_{palace_num}",
-                            use_container_width=True):
-                    selected_palace = palace_num
-    
-    # Manual input as alternative
-    st.divider()
-    manual_palace = st.number_input("Or enter palace number directly:", 
-                                     min_value=1, max_value=9, value=5)
-    
-    if selected_palace is None:
-        selected_palace = manual_palace
-    
-    st.info(f"Selected: Palace {selected_palace} - {get_palace_name(selected_palace)}")
-    
-    # Generate Chart Button
-    if st.button("🔮 Generate Chart", type="primary", use_container_width=True):
-        with st.spinner("Calculating chart..."):
-            chart = generate_qmdj_chart(date_str, time_str, selected_palace)
-            st.session_state.current_chart = chart
-            
-            # Display results
-            st.success("Chart generated successfully!")
-            st.markdown(format_chart_for_display(chart))
-            
-            # Save to history
-            chart_data = {
-                'date': date_str,
-                'time': time_str,
-                'palace': get_palace_name(selected_palace),
-                'formation': chart['qmdj_data']['formation']['primary_formation']['name'],
-                'qmdj_score': chart['synthesis']['qmdj_score'],
-                'bazi_score': chart['synthesis']['bazi_alignment_score'],
-                'verdict': chart['synthesis']['verdict'],
-                'action': chart['synthesis']['primary_action']
-            }
-            save_to_history(chart_data)
-            
-            # Copy prompt button
-            st.divider()
-            prompt = f"""Analyze this QMDJ chart for strategic decision-making:
-
-{json.dumps(chart, indent=2)}
-
-Please provide:
-1. Detailed interpretation based on Joey Yap methodology
-2. Strategic recommendations
-3. Timing considerations
-4. Risk factors to consider"""
-            
-            st.text_area("📋 Analysis Prompt (Copy to use with Claude)", 
-                        prompt, height=200)
-
-# ============================================================================
-# PAGE: EXPORT
-# ============================================================================
-
-def page_export():
-    """Export page"""
-    st.title("📤 Export Data")
-    
-    if st.session_state.current_chart is None:
-        st.warning("⚠️ No chart available. Generate a chart first!")
+    if not records:
+        st.info("No analyses yet. Generate your first chart to get started!")
         return
     
-    st.subheader("Current Chart")
-    
-    # JSON Export
-    st.markdown("### 📄 Universal Schema JSON")
-    json_str = json.dumps(st.session_state.current_chart, indent=2)
-    st.code(json_str, language='json')
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.download_button(
-            "⬇️ Download JSON",
-            json_str,
-            file_name=f"qmdj_chart_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-            mime="application/json",
-            use_container_width=True
-        )
-    
-    with col2:
-        if st.button("📋 Copy JSON", use_container_width=True):
-            st.code(json_str, language='json')
-            st.success("JSON displayed above - select and copy!")
-    
-    # CSV Export of History
-    st.divider()
-    st.markdown("### 📊 History Database (CSV)")
-    
-    if len(st.session_state.history) > 0:
-        csv = st.session_state.history.to_csv(index=False)
-        st.download_button(
-            "⬇️ Download History CSV",
-            csv,
-            file_name=f"qmdj_history_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-        st.dataframe(st.session_state.history, use_container_width=True)
-    else:
-        st.info("No history data yet")
+    for record in records:
+        score = record.get('combined_score', 5.0)
+        if score >= 7:
+            score_color = "#4CAF50"
+            score_emoji = "🌟"
+        elif score >= 4.5:
+            score_color = "#FFC107"
+            score_emoji = "⚡"
+        else:
+            score_color = "#F44336"
+            score_emoji = "⚠️"
+        
+        outcome = record.get('outcome', 'PENDING')
+        outcome_badge = {
+            'PENDING': '⏳',
+            'SUCCESS': '✅',
+            'PARTIAL': '🔶',
+            'FAILURE': '❌'
+        }.get(outcome, '⏳')
+        
+        formation = record.get('formation', '')
+        formation_text = f" | {formation}" if formation else ""
+        
+        st.markdown(f"""
+        <div style="background-color: #16213e; border: 1px solid #2a3f5f; border-radius: 8px; 
+                    padding: 0.75rem 1rem; margin-bottom: 0.5rem; 
+                    display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span style="color: #b8b8b8; font-size: 0.85rem;">
+                    {record.get('date', '')} {record.get('time', '')}
+                </span>
+                <span style="color: #ffffff; margin-left: 0.5rem;">
+                    {record.get('palace_name', '')}{formation_text}
+                </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="color: {score_color}; font-weight: 600;">
+                    {score_emoji} {score}
+                </span>
+                <span>{outcome_badge}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# ============================================================================
-# PAGE: HISTORY & ML TRACKING
-# ============================================================================
-
-def page_history():
-    """History and ML tracking page"""
-    st.title("📈 History & ML Tracking")
+def render_stats_overview():
+    """Render statistics overview"""
+    stats = get_statistics()
     
-    history = st.session_state.history
-    
-    if len(history) == 0:
-        st.info("No history data yet. Generate some charts to see tracking!")
-        return
-    
-    # Filters
-    st.subheader("🔍 Filters")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        verdict_filter = st.multiselect(
-            "Verdict",
-            options=history['Verdict'].unique(),
-            default=history['Verdict'].unique()
-        )
+        st.metric(L.get("total_analyses"), stats['total_records'])
     
     with col2:
-        date_range = st.date_input(
-            "Date Range",
-            value=(history['Date'].min(), history['Date'].max())
-        )
+        st.metric(L.get("success_rate"), f"{stats['success_rate']}%")
     
     with col3:
-        palace_filter = st.multiselect(
-            "Palace",
-            options=history['Palace'].unique(),
-            default=history['Palace'].unique()
-        )
+        st.metric(L.get("pending_count"), stats['pending_count'])
     
-    # Apply filters
-    filtered = history[
-        (history['Verdict'].isin(verdict_filter)) &
-        (history['Palace'].isin(palace_filter))
-    ]
-    
-    # Display filtered data
-    st.subheader("📋 Records")
-    st.dataframe(filtered, use_container_width=True, hide_index=True)
-    
-    # Analytics
-    st.divider()
-    st.subheader("📊 Analytics")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Verdict Distribution**")
-        verdict_counts = filtered['Verdict'].value_counts()
-        st.bar_chart(verdict_counts)
-    
-    with col2:
-        st.markdown("**Palace Usage**")
-        palace_counts = filtered['Palace'].value_counts()
-        st.bar_chart(palace_counts)
+    with col4:
+        completed = stats['success_count'] + stats['partial_count'] + stats['failure_count']
+        st.metric(L.get("completed"), completed)
 
-# ============================================================================
-# PAGE: SETTINGS
-# ============================================================================
-
-def page_settings():
-    """Settings page for BaZi profile management"""
-    st.title("⚙️ Settings")
-    
-    st.subheader("👤 BaZi Profile Configuration")
-    
-    profile = st.session_state.user_profile.copy()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        profile['day_master'] = st.selectbox(
-            "Day Master Stem",
-            ["Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"],
-            index=["Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"].index(profile['day_master'])
-        )
-        
-        profile['element'] = st.selectbox(
-            "Element",
-            ["Wood", "Fire", "Earth", "Metal", "Water"],
-            index=["Wood", "Fire", "Earth", "Metal", "Water"].index(profile['element'])
-        )
-        
-        profile['polarity'] = st.radio("Polarity", ["Yang", "Yin"], 
-                                       index=0 if profile['polarity'] == "Yang" else 1)
-    
-    with col2:
-        profile['strength'] = st.selectbox(
-            "Strength",
-            ["Strong", "Weak", "Extremely Strong", "Extremely Weak", "Balanced"],
-            index=["Strong", "Weak", "Extremely Strong", "Extremely Weak", "Balanced"].index(profile['strength'])
-        )
-        
-        profile['useful_gods'] = st.multiselect(
-            "Useful Gods",
-            ["Wood", "Fire", "Earth", "Metal", "Water"],
-            default=profile['useful_gods']
-        )
-        
-        profile['unfavorable'] = st.multiselect(
-            "Unfavorable Elements",
-            ["Wood", "Fire", "Earth", "Metal", "Water"],
-            default=profile['unfavorable']
-        )
-    
-    # Ten God Profile
-    st.divider()
-    profile['profile_type'] = st.selectbox(
-        "Ten God Profile",
-        list(TEN_GOD_PROFILES.keys()),
-        index=list(TEN_GOD_PROFILES.keys()).index(profile['profile_type']) 
-            if profile['profile_type'] in TEN_GOD_PROFILES else 0
-    )
-    
-    emoji = TEN_GOD_PROFILES[profile['profile_type']]['emoji']
-    st.info(f"{emoji} {profile['profile_type']}")
-    
-    # Special Structures
-    st.divider()
-    st.subheader("Special Structures")
-    
-    profile['special_structures']['wealth_vault'] = st.checkbox(
-        "Wealth Vault Present",
-        value=profile['special_structures']['wealth_vault']
-    )
-    
-    profile['special_structures']['nobleman_present'] = st.checkbox(
-        "Nobleman Present",
-        value=profile['special_structures']['nobleman_present']
-    )
-    
-    # Save Button
-    st.divider()
-    if st.button("💾 Save Profile", type="primary", use_container_width=True):
-        save_user_profile(profile)
-        st.success("✅ Profile saved successfully!")
-        st.rerun()
-
-# ============================================================================
-# MAIN APP
-# ============================================================================
-
+# Main App Layout
 def main():
-    """Main application entry point"""
-    init_app()
-    apply_custom_css()
+    # Header
+    st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="margin: 0; color: #d4af37;">{APP_TITLE}</h1>
+        <div style="color: #b8b8b8; font-size: 0.9rem;">
+            {datetime.now().strftime('%A, %B %d, %Y')}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Sidebar navigation
-    with st.sidebar:
-        st.title("🔮 Qi Men Pro v2.0")
-        st.divider()
-        
-        page = st.radio(
-            "Navigation",
-            ["📊 Dashboard", "🎯 Chart Generator", "📤 Export", 
-             "📈 History & ML", "⚙️ Settings"],
-            label_visibility="collapsed"
-        )
-        
-        st.divider()
-        st.caption(f"Version {APP_VERSION}")
-        st.caption(f"Location: {DEFAULT_LOCATION}")
-        st.caption(f"Timezone: {DEFAULT_TIMEZONE}")
+    # Main content
+    col_left, col_right = st.columns([1, 1.5])
     
-    # Route to selected page
-    if page == "📊 Dashboard":
-        page_dashboard()
-    elif page == "🎯 Chart Generator":
-        page_chart_generator()
-    elif page == "📤 Export":
-        page_export()
-    elif page == "📈 History & ML":
-        page_history()
-    elif page == "⚙️ Settings":
-        page_settings()
+    with col_left:
+        # Quick Chart Section
+        st.markdown(f"""
+        <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            ⚡ {L.get('quick_chart')}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container():
+            render_quick_chart()
+        
+        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+        
+        # BaZi Profile Section
+        st.markdown(f"""
+        <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            👤 {L.get('bazi_profile')}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        render_profile_card()
+        
+        if st.button(f"✏️ {L.get('settings')}", key="edit_profile_btn"):
+            st.switch_page("pages/4_Settings.py")
+    
+    with col_right:
+        # Stats Overview
+        st.markdown(f"""
+        <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            📊 {L.get('stats_overview')}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        render_stats_overview()
+        
+        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+        
+        # Recent Analyses
+        st.markdown(f"""
+        <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            📈 {L.get('recent_analyses')}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        render_recent_analyses()
+        
+        if st.button(f"{L.get('history')} →", key="view_history_btn"):
+            st.switch_page("pages/3_History.py")
+    
+    # Footer navigation hint
+    st.markdown(f"""
+    <div style="margin-top: 2rem; padding: 1rem; background: #16213e; border-radius: 10px; 
+                border: 1px solid #2a3f5f; text-align: center;">
+        <div style="color: #b8b8b8; font-size: 0.9rem;">
+            Use the sidebar to navigate: 
+            <span style="color: #d4af37;">📊 {L.get('chart_generator')}</span> • 
+            <span style="color: #d4af37;">📤 {L.get('export')}</span> • 
+            <span style="color: #d4af37;">📈 {L.get('history')}</span> • 
+            <span style="color: #d4af37;">⚙️ {L.get('settings')}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
