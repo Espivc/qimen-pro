@@ -1,6 +1,6 @@
 """
-Qi Men Pro v2.1 - Dashboard
-Phase 3: Added quick reference card and palace hints
+Ming Qimen 明奇门 - Dashboard
+Clarity for the People | Ancient Wisdom Made Bright
 """
 
 import streamlit as st
@@ -9,8 +9,8 @@ import json
 
 # Page config
 st.set_page_config(
-    page_title="奇門 Qi Men Pro",
-    page_icon="🔮",
+    page_title="明 Ming Qimen",
+    page_icon="🌟",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -40,6 +40,13 @@ if 'analyses' not in st.session_state:
 if 'selected_palace' not in st.session_state:
     st.session_state.selected_palace = 5
 
+# Sync time input with chart page
+if 'shared_time' not in st.session_state:
+    st.session_state.shared_time = datetime.now().strftime("%H:%M")
+
+if 'shared_date' not in st.session_state:
+    st.session_state.shared_date = datetime.now().date()
+
 # ============ HELPER FUNCTIONS ============
 
 def parse_time_input(time_str):
@@ -65,18 +72,18 @@ def get_chinese_hour(hour, minute=0):
     total_minutes = hour * 60 + minute
     
     chinese_hours = [
-        ("子 Zi", "23:00-00:59", "Rat 🐀"),
-        ("丑 Chou", "01:00-02:59", "Ox 🐂"),
-        ("寅 Yin", "03:00-04:59", "Tiger 🐅"),
-        ("卯 Mao", "05:00-06:59", "Rabbit 🐇"),
-        ("辰 Chen", "07:00-08:59", "Dragon 🐉"),
-        ("巳 Si", "09:00-10:59", "Snake 🐍"),
-        ("午 Wu", "11:00-12:59", "Horse 🐴"),
-        ("未 Wei", "13:00-14:59", "Goat 🐐"),
-        ("申 Shen", "15:00-16:59", "Monkey 🐒"),
-        ("酉 You", "17:00-18:59", "Rooster 🐓"),
-        ("戌 Xu", "19:00-20:59", "Dog 🐕"),
-        ("亥 Hai", "21:00-22:59", "Pig 🐖"),
+        ("子 Zi", "23:00-00:59", "Rat 🐀", 0),
+        ("丑 Chou", "01:00-02:59", "Ox 🐂", 1),
+        ("寅 Yin", "03:00-04:59", "Tiger 🐅", 2),
+        ("卯 Mao", "05:00-06:59", "Rabbit 🐇", 3),
+        ("辰 Chen", "07:00-08:59", "Dragon 🐉", 4),
+        ("巳 Si", "09:00-10:59", "Snake 🐍", 5),
+        ("午 Wu", "11:00-12:59", "Horse 🐴", 6),
+        ("未 Wei", "13:00-14:59", "Goat 🐐", 7),
+        ("申 Shen", "15:00-16:59", "Monkey 🐒", 8),
+        ("酉 You", "17:00-18:59", "Rooster 🐓", 9),
+        ("戌 Xu", "19:00-20:59", "Dog 🐕", 10),
+        ("亥 Hai", "21:00-22:59", "Pig 🐖", 11),
     ]
     
     if total_minutes >= 23 * 60 or total_minutes < 1 * 60:
@@ -88,32 +95,90 @@ def get_chinese_hour(hour, minute=0):
     
     return chinese_hours[hour_index]
 
+def get_recommended_palace(hour, user_profile):
+    """Get recommended palace based on current hour and user's useful gods"""
+    # Simple recommendation based on hour and useful gods
+    useful = user_profile.get('useful_gods', [])
+    
+    # Palace elements
+    palace_elements = {
+        1: "Water", 2: "Earth", 3: "Wood", 4: "Wood",
+        5: "Earth", 6: "Metal", 7: "Metal", 8: "Earth", 9: "Fire"
+    }
+    
+    # Find palaces that match user's useful gods
+    good_palaces = []
+    for num, elem in palace_elements.items():
+        if elem in useful:
+            good_palaces.append(num)
+    
+    # Hour-based recommendation
+    hour_recommendations = {
+        (23, 0, 1): [1, 6],      # Zi hour - Career, Mentor
+        (1, 2, 3): [8, 1],       # Chou hour - Knowledge, Career  
+        (3, 4, 5): [3, 4],       # Yin hour - Health, Wealth
+        (5, 6, 7): [3, 4],       # Mao hour - Health, Wealth
+        (7, 8, 9): [4, 9],       # Chen hour - Wealth, Fame
+        (9, 10, 11): [9, 4],     # Si hour - Fame, Wealth
+        (11, 12, 13): [9, 2],    # Wu hour - Fame, Relations
+        (13, 14, 15): [2, 7],    # Wei hour - Relations, Children
+        (15, 16, 17): [6, 7],    # Shen hour - Mentor, Children
+        (17, 18, 19): [6, 7],    # You hour - Mentor, Children
+        (19, 20, 21): [1, 8],    # Xu hour - Career, Knowledge
+        (21, 22, 23): [1, 6],    # Hai hour - Career, Mentor
+    }
+    
+    for hours, palaces in hour_recommendations.items():
+        if hour in hours or (hours[0] <= hour < hours[2]):
+            # Prioritize user's useful god palaces
+            for p in palaces:
+                if p in good_palaces:
+                    return p
+            return palaces[0]
+    
+    return 5  # Default to Center
+
 # Palace data with hints
 PALACE_INFO = {
-    1: {"name": "坎 Kan", "direction": "N", "icon": "💼", "topic": "Career", "hint": "Job, business, life path"},
-    2: {"name": "坤 Kun", "direction": "SW", "icon": "💕", "topic": "Relations", "hint": "Marriage, partnership"},
-    3: {"name": "震 Zhen", "direction": "E", "icon": "💪", "topic": "Health", "hint": "Health, family, new starts"},
-    4: {"name": "巽 Xun", "direction": "SE", "icon": "💰", "topic": "Wealth", "hint": "Money, investments"},
-    5: {"name": "中 Center", "direction": "C", "icon": "🎯", "topic": "Self", "hint": "General, yourself"},
-    6: {"name": "乾 Qian", "direction": "NW", "icon": "🤝", "topic": "Mentor", "hint": "Helpful people, travel"},
-    7: {"name": "兑 Dui", "direction": "W", "icon": "👶", "topic": "Children", "hint": "Creativity, joy, projects"},
-    8: {"name": "艮 Gen", "direction": "NE", "icon": "📚", "topic": "Knowledge", "hint": "Education, skills"},
-    9: {"name": "离 Li", "direction": "S", "icon": "🌟", "topic": "Fame", "hint": "Recognition, reputation"},
+    1: {"name": "坎 Kan", "direction": "N", "icon": "💼", "topic": "Career", "hint": "Job, business, life path", "element": "Water"},
+    2: {"name": "坤 Kun", "direction": "SW", "icon": "💕", "topic": "Relations", "hint": "Marriage, partnership", "element": "Earth"},
+    3: {"name": "震 Zhen", "direction": "E", "icon": "💪", "topic": "Health", "hint": "Health, family, new starts", "element": "Wood"},
+    4: {"name": "巽 Xun", "direction": "SE", "icon": "💰", "topic": "Wealth", "hint": "Money, investments", "element": "Wood"},
+    5: {"name": "中 Center", "direction": "C", "icon": "🎯", "topic": "Self", "hint": "General, yourself", "element": "Earth"},
+    6: {"name": "乾 Qian", "direction": "NW", "icon": "🤝", "topic": "Mentor", "hint": "Helpful people, travel", "element": "Metal"},
+    7: {"name": "兑 Dui", "direction": "W", "icon": "👶", "topic": "Children", "hint": "Creativity, joy, projects", "element": "Metal"},
+    8: {"name": "艮 Gen", "direction": "NE", "icon": "📚", "topic": "Knowledge", "hint": "Education, skills", "element": "Earth"},
+    9: {"name": "离 Li", "direction": "S", "icon": "🌟", "topic": "Fame", "hint": "Recognition, reputation", "element": "Fire"},
 }
 
 # ============ MAIN DASHBOARD ============
 
-st.title("🔮 奇門遁甲 Qi Men Dun Jia Pro")
-st.markdown("**QMDJ + BaZi Integrated Analysis System**")
+# Header with Mission
+st.markdown("""
+<div style="text-align: center; padding: 10px 0;">
+    <h1 style="color: #d4af37; margin-bottom: 5px;">🌟 明 Ming Qimen</h1>
+    <p style="color: #888; font-style: italic; font-size: 1.1em;">Ancient Wisdom, Made Bright and Simple</p>
+</div>
+""", unsafe_allow_html=True)
 
-# Sidebar with Quick Reference
+st.markdown("---")
+
+# Get CURRENT time (live!)
+current_time = datetime.now()
+current_hour = current_time.hour
+current_minute = current_time.minute
+
+# Recommended palace for THIS moment
+recommended_palace = get_recommended_palace(current_hour, st.session_state.user_profile)
+
+# Sidebar
 with st.sidebar:
     st.markdown("### 🧭 Navigation")
     st.markdown("""
-    - 📊 **Dashboard** (current)
+    - 🏠 **Home** (current)
     - 📈 Chart Generator
     - 📤 Export
-    - 📜 History & ML
+    - 📜 History
     - ⚙️ Settings
     - 📚 Help & Guide
     """)
@@ -121,68 +186,86 @@ with st.sidebar:
     st.markdown("---")
     
     # Quick Reference Card
-    st.markdown("### 📖 Quick Reference")
+    st.markdown("### 📖 Quick Guide")
     
-    with st.expander("✅ Auspicious 吉", expanded=False):
+    with st.expander("✅ Good Signs 吉", expanded=False):
         st.markdown("""
         **Doors:** Open 开, Rest 休, Life 生
         
-        **Stars:** Heart 心, Assistant 辅, Ren 任
+        **Stars:** Heart 心, Assistant 辅
         
-        **Deities:** Chief 值符, Moon 太阴
+        **Energy:** High Energy = Take Action!
         """)
     
-    with st.expander("❌ Inauspicious 凶", expanded=False):
+    with st.expander("⚠️ Caution Signs 凶", expanded=False):
         st.markdown("""
         **Doors:** Death 死, Fear 惊, Harm 伤
         
         **Stars:** Canopy 蓬, Grass 芮
         
-        **Deities:** Serpent 蛇, Tiger 虎
+        **Energy:** Low Energy = Rest & Wait
         """)
     
     st.markdown("---")
-    st.markdown("### 📱 Quick Stats")
+    st.markdown("### 📱 Your Stats")
     total = len(st.session_state.analyses)
     success = len([a for a in st.session_state.analyses if a.get('outcome') == 'SUCCESS'])
-    st.metric("Total Analyses", total)
+    st.metric("Total Readings", total)
     st.metric("Success Rate", f"{(success/total*100):.0f}%" if total > 0 else "N/A")
 
 # Main content
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.markdown("### ⚡ Quick Chart 快速起盘")
+    st.markdown("### ⚡ Your Reading 您的盘局")
     
-    # Date and Time row
+    # CURRENT TIME - Auto populated!
+    st.markdown(f"**🕐 Current Time:** {current_time.strftime('%Y-%m-%d %H:%M')}")
+    
+    chinese_hour_info = get_chinese_hour(current_hour, current_minute)
+    st.success(f"**时辰:** {chinese_hour_info[0]} ({chinese_hour_info[1]}) - {chinese_hour_info[2]}")
+    
+    # Date and Time inputs (editable but pre-filled)
     date_col, time_col = st.columns(2)
     
     with date_col:
         selected_date = st.date_input(
             "📅 Select Date 选择日期",
-            value=datetime.now().date(),
-            help="Choose the date for your QMDJ chart"
+            value=current_time.date(),
+            help="Default is today. Change if asking about a different date."
         )
+        # Save to shared state
+        st.session_state.shared_date = selected_date
     
     with time_col:
+        # Default to CURRENT time
+        default_time = current_time.strftime("%H:%M")
         time_input = st.text_input(
             "⏰ Time (HH:MM) 时间",
-            value=datetime.now().strftime("%H:%M"),
+            value=default_time,
             placeholder="e.g., 14:30",
-            help="Enter time in 24-hour format"
+            help="Default is now. Change if asking about a different time."
         )
         
         parsed_time = parse_time_input(time_input)
         if parsed_time:
             hour, minute = parsed_time
-            chinese_hour = get_chinese_hour(hour, minute)
-            st.success(f"✅ {chinese_hour[0]} ({chinese_hour[2]})")
+            # Save to shared state for Chart page
+            st.session_state.shared_time = f"{hour:02d}:{minute:02d}"
+            if f"{hour:02d}:{minute:02d}" != default_time:
+                ch_hour = get_chinese_hour(hour, minute)
+                st.info(f"📅 Selected: {ch_hour[0]} ({ch_hour[2]})")
         else:
             st.error("❌ Invalid time format")
+            hour, minute = current_hour, current_minute
     
-    # Palace Selection with hints
-    st.markdown("#### 🏛️ Select Palace 选择宫位")
-    st.caption("💡 Choose based on your question topic:")
+    # Palace Selection with RECOMMENDATION
+    st.markdown("#### 🏛️ What's Your Question About? 选择宫位")
+    st.caption("💡 Tap the topic that matches your question:")
+    
+    # Show recommendation
+    rec_info = PALACE_INFO[recommended_palace]
+    st.markdown(f"⭐ **Recommended for now:** #{recommended_palace} {rec_info['icon']} **{rec_info['topic']}** - {rec_info['hint']}")
     
     # Palace grid with topic hints
     palace_grid = [
@@ -197,9 +280,11 @@ with col1:
             with col:
                 info = PALACE_INFO[palace_num]
                 is_selected = st.session_state.selected_palace == palace_num
+                is_recommended = palace_num == recommended_palace
                 
-                # Button with topic hint
-                button_label = f"{info['icon']} {info['name']}\n#{palace_num} {info['direction']}\n{info['topic']}"
+                # Button label with star for recommended
+                star = "⭐ " if is_recommended else ""
+                button_label = f"{star}{info['icon']} {info['topic']}\n#{palace_num} {info['direction']}"
                 
                 if st.button(
                     button_label, 
@@ -211,10 +296,10 @@ with col1:
     
     # Show selected palace info
     selected = PALACE_INFO[st.session_state.selected_palace]
-    st.info(f"**Selected:** #{st.session_state.selected_palace} {selected['name']} - {selected['icon']} {selected['topic']} ({selected['hint']})")
+    st.info(f"**Selected:** #{st.session_state.selected_palace} {selected['name']} - {selected['icon']} **{selected['topic']}** ({selected['hint']})")
     
-    # Generate button
-    if st.button("🔮 Generate Chart 生成盘", type="primary", use_container_width=True):
+    # Generate button - Goes to Chart page with data
+    if st.button("🔮 Get Your Reading 获取指引", type="primary", use_container_width=True):
         if parsed_time:
             hour, minute = parsed_time
             st.session_state.last_chart = {
@@ -227,14 +312,17 @@ with col1:
                 "chinese_hour": get_chinese_hour(hour, minute),
                 "generated_at": datetime.now().isoformat()
             }
-            st.success("✅ Chart generated! Go to **Chart Generator** page for full analysis.")
+            # Save shared time for Chart page
+            st.session_state.shared_time = f"{hour:02d}:{minute:02d}"
+            st.session_state.shared_date = selected_date
+            st.success("✅ Reading prepared! Go to **Chart** page to see your guidance.")
             st.balloons()
         else:
             st.error("❌ Please enter a valid time in HH:MM format")
 
 with col2:
-    # User Profile Card
-    st.markdown("### 👤 Your BaZi Profile")
+    # User Profile Card with helpful explanations
+    st.markdown("### 👤 Your Profile")
     
     profile = st.session_state.user_profile
     
@@ -245,24 +333,26 @@ with col2:
     
     st.markdown("---")
     
-    # Useful Gods
-    st.markdown("#### 用神 Useful Gods")
+    # Useful Gods with explanation
+    st.markdown("#### 用神 Helpful Elements")
     useful = profile.get('useful_gods', [])
     if useful:
         st.success(' • '.join(str(g) for g in useful))
+        st.caption("ℹ️ These elements bring you balance. Seeing them in your reading is a good sign!")
     else:
-        st.info("Not set")
+        st.info("Not set - Go to Settings to calculate")
     
-    # Unfavorable
-    st.markdown("#### 忌神 Unfavorable")
+    # Unfavorable with gentle explanation
+    st.markdown("#### 忌神 Challenging Elements")
     unfav = profile.get('unfavorable', [])
     if unfav:
         st.error(' • '.join(str(u) for u in unfav))
+        st.caption("ℹ️ These elements may create obstacles. Be mindful when they appear.")
     else:
         st.info("Not set")
     
     # Profile
-    st.markdown("#### 性格 Profile")
+    st.markdown("#### 性格 Your Nature")
     st.info(profile.get('profile', 'Not set'))
     
     st.markdown("")
@@ -273,8 +363,29 @@ with col2:
     if profile.get('birth_date'):
         st.caption(f"📅 {profile.get('birth_date')} {profile.get('birth_time', '')}")
 
-# Quick Palace Reference (collapsible)
+# Mission Statement (collapsible)
 st.markdown("---")
+with st.expander("🌟 About Ming Qimen 关于明奇门", expanded=False):
+    st.markdown("""
+    ### Our Mission 我们的使命
+    
+    I created **Ming Qimen** because I believe wisdom shouldn't come with a price tag or a headache.
+    
+    My name is **Beng (明)**, which means **'Brightness.'** My goal is to use that light to clear 
+    the fog of ancient calculations.
+    
+    Too many apps are built for experts; **this one is built for you.**
+    
+    **No paywalls, no complex data entry** — just clear guidance to help you find your way, for free.
+    
+    *Let's help people first, and let the rest follow.*
+    
+    ---
+    
+    **"Guiding you first, because your peace of mind matters."**
+    """)
+
+# Quick Palace Reference (collapsible)
 with st.expander("🏛️ Palace Quick Reference 宫位速查", expanded=False):
     ref_cols = st.columns(3)
     
@@ -286,24 +397,11 @@ with st.expander("🏛️ Palace Quick Reference 宫位速查", expanded=False):
                     st.markdown(f"**#{palace_num} {info['name']}** {info['icon']}")
                     st.caption(f"{info['topic']}: {info['hint']}")
 
-# Recent analyses
-st.markdown("---")
-st.markdown("### 📜 Recent Analyses 最近分析")
-
-if st.session_state.analyses:
-    for i, analysis in enumerate(reversed(st.session_state.analyses[-5:])):
-        palace_num = analysis.get('palace', 5)
-        palace_info = PALACE_INFO.get(palace_num, {})
-        with st.expander(f"📊 {analysis.get('date', 'N/A')} - {palace_info.get('icon', '')} Palace #{palace_num}"):
-            st.json(analysis)
-else:
-    st.info("No analyses yet. Generate your first chart above! 还没有分析记录。")
-
 # Footer
 st.markdown("---")
 col_foot1, col_foot2 = st.columns([3, 1])
 with col_foot1:
-    st.caption("🔮 Qi Men Pro v2.1 | Phase 3 | Joey Yap Methodology")
+    st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People")
 with col_foot2:
     if st.button("📚 Help & Guide"):
         st.switch_page("pages/5_Help.py")
