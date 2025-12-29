@@ -1,12 +1,12 @@
 """
-Qi Men Pro - Help & Guide Page
-Explains how to use the app and QMDJ methodology
+Ming Qimen 明奇门 - Help & Guide Page
+Clarity for the People
 """
 
 import streamlit as st
 
 st.set_page_config(
-    page_title="Help & Guide | Qi Men Pro",
+    page_title="Help | Ming Qimen",
     page_icon="📚",
     layout="wide"
 )
@@ -18,35 +18,101 @@ try:
 except:
     pass
 
-st.title("📚 Help & Guide 帮助指南")
-st.markdown("Learn how to use Qi Men Pro for QMDJ analysis")
+st.markdown("""
+<div style="text-align: center;">
+    <h1 style="color: #d4af37;">📚 Help & Guide 帮助指南</h1>
+    <p style="color: #888;">Ming Qimen 明奇门 | Ancient Wisdom Made Bright</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Navigation tabs
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🔮 What is QMDJ?", 
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🌟 About Ming", 
+    "🔮 What is This?", 
     "📋 How to Use", 
-    "🏛️ Palace Guide",
-    "📖 Quick Reference"
+    "🏛️ Topics Guide",
+    "📖 Signs Reference"
 ])
 
-# ============ TAB 1: WHAT IS QMDJ ============
+# ============ TAB 1: ABOUT MING ============
 with tab1:
-    st.markdown("## 🔮 What is Qi Men Dun Jia? 奇门遁甲")
+    st.markdown("## 🌟 About Ming Qimen 关于明奇门")
     
     st.markdown("""
-    **Qi Men Dun Jia (奇门遁甲)** is one of the most powerful Chinese metaphysics systems, 
-    originally used for military strategy and now applied to:
+    ### Our Mission 我们的使命
     
-    - ✅ **Business decisions** - When to sign contracts, launch products
-    - ✅ **Career choices** - Job changes, negotiations, interviews
-    - ✅ **Relationship timing** - Marriage, partnerships
-    - ✅ **Travel planning** - Best directions and timing
-    - ✅ **Daily forecasting** - Understanding the energy of each day/hour
+    I created **Ming Qimen** because I believe wisdom shouldn't come with a price tag or a headache.
+    
+    My name is **Beng (明)**, which means **'Brightness.'** My goal is to use that light to clear 
+    the fog of ancient calculations.
+    
+    Too many apps are built for experts; **this one is built for you.**
+    
+    ---
+    
+    ### 💡 What Makes Us Different
+    
+    | Other Apps | Ming Qimen |
+    |------------|------------|
+    | Complex jargon | Simple, clear language |
+    | Requires expertise | Built for beginners |
+    | Paywalls & subscriptions | **Free forever** |
+    | Confusing data entry | One tap to clarity |
+    | "Dead" and "Confined" | "Rest Energy" and "Low Energy" |
+    
+    ---
+    
+    ### 🎯 Our Promise
+    
+    - **No paywalls** — full access, always free
+    - **No confusing jargon** — we explain everything simply
+    - **No expertise required** — guidance from your first tap
+    - **No judgment** — just helpful direction
+    
+    ---
+    
+    > *"Guiding you first, because your peace of mind matters."*
+    
+    ---
+    
+    ### The Name "Ming" 明
+    
+    **明 (Míng)** means **brightness, clarity, understanding**.
+    
+    It's composed of:
+    - ☀️ **日 (Sun)** — the light of day
+    - 🌙 **月 (Moon)** — the light of night
+    
+    Together: **Light that never fades** — guiding you day and night.
     """)
+
+# ============ TAB 2: WHAT IS THIS ============
+with tab2:
+    st.markdown("## 🔮 What is Qi Men Dun Jia?")
     
-    st.markdown("---")
+    st.markdown("""
+    ### Ancient GPS for Life Decisions
     
-    st.markdown("### 🔄 How QMDJ Works")
+    Imagine having a GPS that tells you not just *where* to go, but *when* to go.
+    
+    **Qi Men Dun Jia** (奇门遁甲) is an ancient Chinese system that reads the energy 
+    of any moment to help you make better decisions about:
+    
+    - ✅ **Career** — job changes, business deals
+    - ✅ **Money** — investments, purchases
+    - ✅ **Relationships** — partnerships, meetings
+    - ✅ **Health** — medical appointments, treatments
+    - ✅ **Travel** — trips, moving, relocations
+    
+    ---
+    
+    ### How Does It Work?
+    
+    Every moment has its own "energy signature" — like weather, but for decisions.
+    
+    Just like you'd check the weather before a picnic, you can check the energy 
+    before making important choices.
+    """)
     
     col1, col2, col3 = st.columns(3)
     
@@ -54,11 +120,10 @@ with tab1:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                     padding: 20px; border-radius: 10px; border: 1px solid #d4af37; text-align: center;">
-            <h4 style="color: #d4af37;">1️⃣ Your BaZi</h4>
+            <h4 style="color: #d4af37;">1️⃣ Your Profile</h4>
             <p style="font-size: 2em;">👤</p>
             <p><strong>Who You Are</strong></p>
-            <p style="color: #888; font-size: 0.9em;">Your birth chart shows your strengths, 
-            weaknesses, and what elements help or harm you.</p>
+            <p style="color: #888; font-size: 0.9em;">Your birth chart shows what elements help or challenge you.</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -66,11 +131,10 @@ with tab1:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                     padding: 20px; border-radius: 10px; border: 1px solid #d4af37; text-align: center;">
-            <h4 style="color: #d4af37;">2️⃣ QMDJ Chart</h4>
-            <p style="font-size: 2em;">🔮</p>
-            <p><strong>The Moment</strong></p>
-            <p style="color: #888; font-size: 0.9em;">The chart captures cosmic energy at a specific 
-            date/time, showing opportunities and obstacles.</p>
+            <h4 style="color: #d4af37;">2️⃣ The Moment</h4>
+            <p style="font-size: 2em;">🕐</p>
+            <p><strong>Right Now</strong></p>
+            <p style="color: #888; font-size: 0.9em;">We read the energy of the current time for your question.</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -78,250 +142,213 @@ with tab1:
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                     padding: 20px; border-radius: 10px; border: 1px solid #d4af37; text-align: center;">
-            <h4 style="color: #d4af37;">3️⃣ Analysis</h4>
-            <p style="font-size: 2em;">📊</p>
-            <p><strong>The Answer</strong></p>
-            <p style="color: #888; font-size: 0.9em;">Combining your BaZi with the QMDJ chart 
-            gives personalized guidance for your question.</p>
+            <h4 style="color: #d4af37;">3️⃣ Your Guidance</h4>
+            <p style="font-size: 2em;">💡</p>
+            <p><strong>Clear Advice</strong></p>
+            <p style="color: #888; font-size: 0.9em;">Simple guidance: Go ahead, wait, or prepare more.</p>
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("---")
-    
-    st.markdown("### 📊 QMDJ Chart Components")
-    
     st.markdown("""
-    | Component | Chinese | What It Represents |
-    |-----------|---------|-------------------|
-    | **Heaven Stem** | 天干 | Heaven's energy, intention, what's meant to be |
-    | **Earth Stem** | 地干 | Ground reality, current situation |
-    | **Star** | 九星 | Timing factor, luck influence |
-    | **Door** | 八门 | Type of opportunity, action to take |
-    | **Deity** | 八神 | Hidden influence, spiritual guidance |
-    | **Formation** | 格局 | Special patterns that modify the reading |
+    ---
+    
+    ### Is This Fortune Telling?
+    
+    **No.** This is decision support.
+    
+    We don't predict your future — we help you understand the *current conditions* 
+    so you can make better choices. Like checking the weather, not predicting it.
+    
+    **You always have free will.** This is just another tool in your toolkit.
     """)
 
-# ============ TAB 2: HOW TO USE ============
-with tab2:
-    st.markdown("## 📋 How to Use Qi Men Pro")
+# ============ TAB 3: HOW TO USE ============
+with tab3:
+    st.markdown("## 📋 How to Use Ming Qimen")
     
-    st.markdown("### Step-by-Step Workflow")
+    st.markdown("### 3 Simple Steps")
     
     # Step 1
-    st.markdown("#### Step 1: Set Your BaZi Profile (One Time)")
-    st.info("""
+    st.success("""
+    ### Step 1: Set Up Your Profile (Once)
+    
     📍 **Go to:** Settings → BaZi Calculator
     
-    1. Enter your birth date (Solar calendar 阳历, NOT lunar!)
-    2. Enter your birth time (as precise as possible)
-    3. Click "Calculate BaZi"
-    4. Click "Save as My Profile"
+    1. Enter your birth date (use regular calendar, not lunar)
+    2. Enter your birth time (best guess is okay!)
+    3. Tap "Calculate"
+    4. Tap "Save as My Profile"
     
-    ✅ **Done!** Your profile is now saved and will be used for all analyses.
+    ✅ **Done!** This helps personalize your readings.
     """)
     
     # Step 2
-    st.markdown("#### Step 2: Ask Your Question")
-    st.success("""
-    📍 **Go to:** Dashboard or Chart Generator
+    st.info("""
+    ### Step 2: Ask Your Question
     
-    1. **Set the Date** - When is the event/decision?
-       - For "should I do X today?" → Use today's date
-       - For "is tomorrow good for Y?" → Use tomorrow's date
+    📍 **On the Home page:**
     
-    2. **Set the Time** - What time matters?
-       - Current time for immediate decisions
-       - Meeting/event time for specific situations
-    
-    3. **Select the Palace** - What's your question about?
-       - See Palace Guide tab for details
+    1. Your current time is already set ⏰
+    2. Tap the **topic** that matches your question:
+       - 💼 Career, 💰 Wealth, 💕 Relations, etc.
+    3. Look for the ⭐ **recommended** topic for best results!
     """)
     
     # Step 3
-    st.markdown("#### Step 3: Generate & Analyze")
     st.warning("""
-    📍 **Go to:** Chart Generator
+    ### Step 3: Get Your Guidance
     
-    1. Click "Generate QMDJ Chart"
-    2. Review the components (Star, Door, Deity)
-    3. Check for any formations
-    4. Look at the overall verdict
+    📍 **Tap "Get Your Reading"**
     
-    🔮 **For deeper analysis:** Export JSON → Use with Project 1 (AI Analyst)
+    You'll see:
+    - 🟢 **Green Light** — Go ahead with confidence!
+    - 🟡 **Yellow Light** — Proceed carefully or wait
+    - ⚪ **Neutral** — Success depends on your effort
+    
+    **That's it!** Simple guidance in seconds.
     """)
     
     st.markdown("---")
     
-    st.markdown("### 🎯 Common Use Cases")
+    st.markdown("### 🎯 Example Questions")
     
-    use_cases = [
-        ("Should I accept this job offer?", "Set to decision time, Palace #1 (Career)"),
-        ("Is today good for signing contract?", "Today + current time, Palace #4 (Wealth)"),
-        ("Will my meeting go well?", "Meeting date/time, Palace #6 (Mentor) or #1 (Career)"),
-        ("Should I travel this weekend?", "Travel date/time, Palace based on purpose"),
-        ("General daily forecast", "Today + morning, Palace #5 (Center/Self)"),
+    examples = [
+        ("Should I apply for this job?", "Tap 💼 Career"),
+        ("Is today good for investing?", "Tap 💰 Wealth"),
+        ("Will my meeting go well?", "Tap 💼 Career or 🤝 Mentor"),
+        ("Should I have this difficult conversation?", "Tap 💕 Relations"),
+        ("General outlook for today?", "Tap 🎯 Self"),
     ]
     
-    for question, answer in use_cases:
-        with st.expander(f"❓ {question}"):
-            st.markdown(f"**Setup:** {answer}")
+    for q, a in examples:
+        with st.expander(f"❓ {q}"):
+            st.markdown(f"**Action:** {a}")
 
-# ============ TAB 3: PALACE GUIDE ============
-with tab3:
-    st.markdown("## 🏛️ Palace Selection Guide 宫位指南")
+# ============ TAB 4: TOPICS GUIDE ============
+with tab4:
+    st.markdown("## 🏛️ Topics Guide 主题指南")
     
     st.markdown("""
-    The **9 Palaces** represent different life areas. Select the palace that matches your question.
+    Choose the topic that matches your question. If unsure, pick **🎯 Self** for general guidance.
     """)
     
     # Visual grid
-    st.markdown("### 📍 The 9 Palaces Map")
-    
-    col1, col2, col3 = st.columns(3)
-    
     palace_data = [
         [
-            ("#4 巽 Xun", "SE 东南", "💰 Wealth", "#228B22", "Money, investments, assets, income"),
-            ("#9 离 Li", "S 南", "🌟 Fame", "#DC143C", "Recognition, reputation, visibility"),
-            ("#2 坤 Kun", "SW 西南", "💕 Relations", "#DAA520", "Marriage, partnerships, mother"),
+            ("💰 Wealth", "#4", "SE", "#228B22", "Money, investments, income, financial decisions"),
+            ("🌟 Fame", "#9", "S", "#DC143C", "Recognition, reputation, visibility, promotion"),
+            ("💕 Relations", "#2", "SW", "#DAA520", "Marriage, partnerships, mother, cooperation"),
         ],
         [
-            ("#3 震 Zhen", "E 东", "💪 Health", "#228B22", "Health, family, new beginnings"),
-            ("#5 中 Center", "C 中", "🎯 Self", "#DAA520", "Yourself, general matters, overall"),
-            ("#7 兑 Dui", "W 西", "👶 Children", "#C0C0C0", "Children, creativity, joy, projects"),
+            ("💪 Health", "#3", "E", "#228B22", "Health, family, new projects, fresh starts"),
+            ("🎯 Self", "#5", "C", "#DAA520", "Yourself, general guidance, overall energy"),
+            ("👶 Children", "#7", "W", "#C0C0C0", "Children, creativity, joy, passion projects"),
         ],
         [
-            ("#8 艮 Gen", "NE 东北", "📚 Knowledge", "#DAA520", "Education, skills, meditation"),
-            ("#1 坎 Kan", "N 北", "💼 Career", "#1E90FF", "Career, business, life path"),
-            ("#6 乾 Qian", "NW 西北", "🤝 Mentor", "#C0C0C0", "Helpful people, father, travel"),
+            ("📚 Knowledge", "#8", "NE", "#DAA520", "Education, skills, self-improvement, study"),
+            ("💼 Career", "#1", "N", "#1E90FF", "Career, job, business, life path, purpose"),
+            ("🤝 Mentor", "#6", "NW", "#C0C0C0", "Helpful people, mentors, father, travel"),
         ]
     ]
     
     for row in palace_data:
         cols = st.columns(3)
-        for col, (name, direction, icon, color, desc) in zip(cols, row):
+        for col, (name, num, direction, color, desc) in zip(cols, row):
             with col:
                 st.markdown(f"""
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                             padding: 15px; border-radius: 10px; border: 2px solid {color}; 
-                            text-align: center; margin-bottom: 10px;">
-                    <p style="color: {color}; font-weight: bold; margin: 0;">{name}</p>
-                    <p style="color: #888; font-size: 0.8em; margin: 5px 0;">{direction}</p>
-                    <p style="font-size: 1.5em; margin: 5px 0;">{icon}</p>
-                    <p style="color: #ccc; font-size: 0.85em; margin: 0;">{desc}</p>
+                            text-align: center; margin-bottom: 10px; min-height: 150px;">
+                    <p style="font-size: 1.5em; margin: 5px 0;">{name}</p>
+                    <p style="color: {color}; font-weight: bold; margin: 0;">{num} • {direction}</p>
+                    <p style="color: #ccc; font-size: 0.85em; margin-top: 10px;">{desc}</p>
                 </div>
                 """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    st.markdown("### 🎯 Quick Selection Table")
+
+# ============ TAB 5: SIGNS REFERENCE ============
+with tab5:
+    st.markdown("## 📖 Understanding the Signs")
     
     st.markdown("""
-    | Your Question About | Select Palace | Direction |
-    |--------------------:|:--------------|:----------|
-    | 💼 Career, job, business | **#1 坎 Kan** | North |
-    | 💕 Marriage, relationship | **#2 坤 Kun** | Southwest |
-    | 💪 Health, family | **#3 震 Zhen** | East |
-    | 💰 Money, wealth, investment | **#4 巽 Xun** | Southeast |
-    | 🎯 Yourself, general | **#5 中 Center** | Center |
-    | 🤝 Helpful people, mentor | **#6 乾 Qian** | Northwest |
-    | 👶 Children, creativity | **#7 兑 Dui** | West |
-    | 📚 Education, skills | **#8 艮 Gen** | Northeast |
-    | 🌟 Fame, recognition | **#9 离 Li** | South |
+    When you get a reading, you'll see **Stars**, **Doors**, and **Spirits**. 
+    Here's what they mean in simple terms:
     """)
-
-# ============ TAB 4: QUICK REFERENCE ============
-with tab4:
-    st.markdown("## 📖 Quick Reference Card")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### ✅ Auspicious Indicators 吉")
+        st.markdown("### ✅ Favorable Signs (Green Light!)")
         
-        st.markdown("""
-        **Doors 八门 (Best to Good):**
-        - 🟢 **开 Open** - Best for starting new things
-        - 🟢 **休 Rest** - Good for meetings, negotiations
-        - 🟢 **生 Life** - Excellent for wealth, growth
-        - 🟡 **景 Scenery** - Good for fame, documents
+        st.success("""
+        **Stars 九星:**
+        - 🌟 **Heart** — Wisdom, good decisions
+        - 🌟 **Assistant** — Help available
+        - 🌟 **Ren** — Steady progress
+        - 🌟 **Impulse** — Quick action works
         
-        **Stars 九星 (Auspicious):**
-        - ⭐ **天心 Heart** - Wisdom, problem-solving
-        - ⭐ **天辅 Assistant** - Help, support available
-        - ⭐ **天任 Ren** - Steady progress, reliable
-        - ⭐ **天冲 Impulse** - Quick action, momentum
+        **Doors 八门:**
+        - 🚪 **Open** — New opportunities
+        - 🚪 **Life** — Growth & prosperity  
+        - 🚪 **Rest** — Good for meetings
         
-        **Deities 八神 (Favorable):**
-        - 👑 **值符 Chief** - Authority, blessing
-        - 🌙 **太阴 Moon** - Hidden help, secrets revealed
-        - ☁️ **九天 Nine Heaven** - Expansion, going public
-        - 🤝 **六合 Six Harmony** - Cooperation, partnership
+        **Spirits 八神:**
+        - ✨ **Chief** — Blessings from above
+        - ✨ **Moon** — Hidden help
+        - ✨ **Harmony** — Cooperation wins
+        - ✨ **Heaven** — Go big!
         """)
     
     with col2:
-        st.markdown("### ❌ Inauspicious Indicators 凶")
+        st.markdown("### ⚠️ Caution Signs (Slow Down)")
         
-        st.markdown("""
-        **Doors 八门 (Avoid):**
-        - 🔴 **死 Death** - Endings, obstacles, blocked
-        - 🔴 **惊 Fear** - Shock, unexpected problems
-        - 🔴 **伤 Harm** - Injury, conflict, arguments
-        - 🟠 **杜 Delusion** - Hidden, stuck, unclear
+        st.error("""
+        **Stars 九星:**
+        - ⚠️ **Canopy** — Hidden obstacles
+        - ⚠️ **Grass** — Slow progress
         
-        **Stars 九星 (Inauspicious):**
-        - ⚠️ **天蓬 Canopy** - Deception, hidden dangers
-        - ⚠️ **天芮 Grass** - Illness, obstacles
-        - ⚠️ **天柱 Pillar** - Gossip, slander
+        **Doors 八门:**
+        - 🚪 **Stillness** — Rest & reflect
+        - 🚪 **Surprise** — Expect unexpected
+        - 🚪 **Harm** — Careful with words
         
-        **Deities 八神 (Unfavorable):**
-        - 🐍 **腾蛇 Serpent** - Worry, nightmares, deception
-        - 🐯 **白虎 Tiger** - Danger, injury, aggression
-        - 🌑 **玄武 Emptiness** - Loss, theft, unclear
-        - 🪝 **勾陈 Hook** - Obstacles, delays, legal issues
+        **Spirits 八神:**
+        - ⚠️ **Serpent** — Worry & anxiety
+        - ⚠️ **Tiger** — Be careful
+        - ⚠️ **Void** — Something unclear
         """)
     
     st.markdown("---")
     
-    st.markdown("### 🔥 Five Elements Quick Guide")
-    
-    element_cols = st.columns(5)
-    elements = [
-        ("🌳", "Wood 木", "#228B22", "Growth, creativity, kindness"),
-        ("🔥", "Fire 火", "#DC143C", "Passion, fame, expansion"),
-        ("🏔️", "Earth 土", "#DAA520", "Stability, trust, nurturing"),
-        ("⚪", "Metal 金", "#C0C0C0", "Precision, justice, strength"),
-        ("💧", "Water 水", "#1E90FF", "Wisdom, flow, communication"),
-    ]
-    
-    for col, (icon, name, color, meaning) in zip(element_cols, elements):
-        with col:
-            st.markdown(f"""
-            <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2em; margin: 0;">{icon}</p>
-                <p style="color: {color}; font-weight: bold; margin: 5px 0;">{name}</p>
-                <p style="color: #888; font-size: 0.8em;">{meaning}</p>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    st.markdown("### 🔄 Element Relationships")
+    st.markdown("### 🔋 Energy Levels")
     
     st.markdown("""
-    **Productive Cycle (相生) - Supporting:**
-    ```
-    Wood → Fire → Earth → Metal → Water → Wood
-    (Wood feeds Fire, Fire creates Earth/ash, etc.)
-    ```
-    
-    **Controlling Cycle (相克) - Weakening:**
-    ```
-    Wood → Earth → Water → Fire → Metal → Wood
-    (Wood breaks Earth, Earth dams Water, etc.)
-    ```
+    Each sign also has an **Energy Level** showing how strong it is right now:
     """)
+    
+    energy_cols = st.columns(5)
+    
+    energies = [
+        ("🔥", "High Energy", "Take Action!", "green"),
+        ("✨", "Good Energy", "Favorable", "green"),
+        ("😐", "Balanced", "Normal", "orange"),
+        ("🌙", "Low Energy", "Be Patient", "orange"),
+        ("💤", "Rest Energy", "Wait & Reflect", "red"),
+    ]
+    
+    for col, (icon, label, advice, color) in zip(energy_cols, energies):
+        with col:
+            if color == "green":
+                st.success(f"{icon}\n**{label}**\n{advice}")
+            elif color == "red":
+                st.error(f"{icon}\n**{label}**\n{advice}")
+            else:
+                st.warning(f"{icon}\n**{label}**\n{advice}")
 
 # Footer
 st.markdown("---")
-st.caption("📚 Qi Men Pro Help & Guide | Joey Yap Methodology")
+st.markdown("""
+<div style="text-align: center;">
+    <p style="color: #888;">🌟 Ming Qimen 明奇门 | Clarity for the People</p>
+    <p style="color: #666; font-size: 0.9em;"><em>"Guiding you first, because your peace of mind matters."</em></p>
+</div>
+""", unsafe_allow_html=True)
