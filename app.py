@@ -1,10 +1,11 @@
 """
 Ming Qimen 明奇门 - Dashboard
 Clarity for the People | Ancient Wisdom Made Bright
+Fixed: Singapore timezone (UTC+8)
 """
 
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import json
 
 # Page config
@@ -14,6 +15,13 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Singapore timezone (UTC+8)
+SGT = timezone(timedelta(hours=8))
+
+def get_singapore_time():
+    """Get current time in Singapore (UTC+8)"""
+    return datetime.now(SGT)
 
 # Load custom CSS
 try:
@@ -40,12 +48,15 @@ if 'analyses' not in st.session_state:
 if 'selected_palace' not in st.session_state:
     st.session_state.selected_palace = 5
 
+# Get SINGAPORE time
+sg_now = get_singapore_time()
+
 # Sync time input with chart page
 if 'shared_time' not in st.session_state:
-    st.session_state.shared_time = datetime.now().strftime("%H:%M")
+    st.session_state.shared_time = sg_now.strftime("%H:%M")
 
 if 'shared_date' not in st.session_state:
-    st.session_state.shared_date = datetime.now().date()
+    st.session_state.shared_date = sg_now.date()
 
 # ============ HELPER FUNCTIONS ============
 
@@ -97,48 +108,43 @@ def get_chinese_hour(hour, minute=0):
 
 def get_recommended_palace(hour, user_profile):
     """Get recommended palace based on current hour and user's useful gods"""
-    # Simple recommendation based on hour and useful gods
     useful = user_profile.get('useful_gods', [])
     
-    # Palace elements
     palace_elements = {
         1: "Water", 2: "Earth", 3: "Wood", 4: "Wood",
         5: "Earth", 6: "Metal", 7: "Metal", 8: "Earth", 9: "Fire"
     }
     
-    # Find palaces that match user's useful gods
     good_palaces = []
     for num, elem in palace_elements.items():
         if elem in useful:
             good_palaces.append(num)
     
-    # Hour-based recommendation
     hour_recommendations = {
-        (23, 0, 1): [1, 6],      # Zi hour - Career, Mentor
-        (1, 2, 3): [8, 1],       # Chou hour - Knowledge, Career  
-        (3, 4, 5): [3, 4],       # Yin hour - Health, Wealth
-        (5, 6, 7): [3, 4],       # Mao hour - Health, Wealth
-        (7, 8, 9): [4, 9],       # Chen hour - Wealth, Fame
-        (9, 10, 11): [9, 4],     # Si hour - Fame, Wealth
-        (11, 12, 13): [9, 2],    # Wu hour - Fame, Relations
-        (13, 14, 15): [2, 7],    # Wei hour - Relations, Children
-        (15, 16, 17): [6, 7],    # Shen hour - Mentor, Children
-        (17, 18, 19): [6, 7],    # You hour - Mentor, Children
-        (19, 20, 21): [1, 8],    # Xu hour - Career, Knowledge
-        (21, 22, 23): [1, 6],    # Hai hour - Career, Mentor
+        (23, 0, 1): [1, 6],
+        (1, 2, 3): [8, 1],
+        (3, 4, 5): [3, 4],
+        (5, 6, 7): [3, 4],
+        (7, 8, 9): [4, 9],
+        (9, 10, 11): [9, 4],
+        (11, 12, 13): [9, 2],
+        (13, 14, 15): [2, 7],
+        (15, 16, 17): [6, 7],
+        (17, 18, 19): [6, 7],
+        (19, 20, 21): [1, 8],
+        (21, 22, 23): [1, 6],
     }
     
     for hours, palaces in hour_recommendations.items():
         if hour in hours or (hours[0] <= hour < hours[2]):
-            # Prioritize user's useful god palaces
             for p in palaces:
                 if p in good_palaces:
                     return p
             return palaces[0]
     
-    return 5  # Default to Center
+    return 5
 
-# Palace data with hints
+# Palace data
 PALACE_INFO = {
     1: {"name": "坎 Kan", "direction": "N", "icon": "💼", "topic": "Career", "hint": "Job, business, life path", "element": "Water"},
     2: {"name": "坤 Kun", "direction": "SW", "icon": "💕", "topic": "Relations", "hint": "Marriage, partnership", "element": "Earth"},
@@ -163,8 +169,8 @@ st.markdown("""
 
 st.markdown("---")
 
-# Get CURRENT time (live!)
-current_time = datetime.now()
+# Get SINGAPORE current time
+current_time = get_singapore_time()
 current_hour = current_time.hour
 current_minute = current_time.minute
 
@@ -185,7 +191,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Quick Reference Card
+    # Quick Reference
     st.markdown("### 📖 Quick Guide")
     
     with st.expander("✅ Good Signs 吉", expanded=False):
@@ -199,7 +205,7 @@ with st.sidebar:
     
     with st.expander("⚠️ Caution Signs 凶", expanded=False):
         st.markdown("""
-        **Doors:** Death 死, Fear 惊, Harm 伤
+        **Doors:** Stillness 死, Surprise 惊
         
         **Stars:** Canopy 蓬, Grass 芮
         
@@ -219,38 +225,35 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.markdown("### ⚡ Your Reading 您的盘局")
     
-    # CURRENT TIME - Auto populated!
-    st.markdown(f"**🕐 Current Time:** {current_time.strftime('%Y-%m-%d %H:%M')}")
+    # CURRENT TIME - Singapore timezone!
+    st.markdown(f"**🕐 Singapore Time (SGT):** {current_time.strftime('%Y-%m-%d %H:%M')}")
     
     chinese_hour_info = get_chinese_hour(current_hour, current_minute)
     st.success(f"**时辰:** {chinese_hour_info[0]} ({chinese_hour_info[1]}) - {chinese_hour_info[2]}")
     
-    # Date and Time inputs (editable but pre-filled)
+    # Date and Time inputs
     date_col, time_col = st.columns(2)
     
     with date_col:
         selected_date = st.date_input(
             "📅 Select Date 选择日期",
             value=current_time.date(),
-            help="Default is today. Change if asking about a different date."
+            help="Default is today (Singapore time)"
         )
-        # Save to shared state
         st.session_state.shared_date = selected_date
     
     with time_col:
-        # Default to CURRENT time
         default_time = current_time.strftime("%H:%M")
         time_input = st.text_input(
             "⏰ Time (HH:MM) 时间",
             value=default_time,
             placeholder="e.g., 14:30",
-            help="Default is now. Change if asking about a different time."
+            help="Default is now (Singapore time)"
         )
         
         parsed_time = parse_time_input(time_input)
         if parsed_time:
             hour, minute = parsed_time
-            # Save to shared state for Chart page
             st.session_state.shared_time = f"{hour:02d}:{minute:02d}"
             if f"{hour:02d}:{minute:02d}" != default_time:
                 ch_hour = get_chinese_hour(hour, minute)
@@ -259,7 +262,7 @@ with col1:
             st.error("❌ Invalid time format")
             hour, minute = current_hour, current_minute
     
-    # Palace Selection with RECOMMENDATION
+    # Palace Selection
     st.markdown("#### 🏛️ What's Your Question About? 选择宫位")
     st.caption("💡 Tap the topic that matches your question:")
     
@@ -267,11 +270,11 @@ with col1:
     rec_info = PALACE_INFO[recommended_palace]
     st.markdown(f"⭐ **Recommended for now:** #{recommended_palace} {rec_info['icon']} **{rec_info['topic']}** - {rec_info['hint']}")
     
-    # Palace grid with topic hints
+    # Palace grid
     palace_grid = [
-        [4, 9, 2],  # Top row: SE, S, SW
-        [3, 5, 7],  # Middle row: E, Center, W
-        [8, 1, 6],  # Bottom row: NE, N, NW
+        [4, 9, 2],
+        [3, 5, 7],
+        [8, 1, 6],
     ]
     
     for row in palace_grid:
@@ -282,7 +285,6 @@ with col1:
                 is_selected = st.session_state.selected_palace == palace_num
                 is_recommended = palace_num == recommended_palace
                 
-                # Button label with star for recommended
                 star = "⭐ " if is_recommended else ""
                 button_label = f"{star}{info['icon']} {info['topic']}\n#{palace_num} {info['direction']}"
                 
@@ -294,11 +296,11 @@ with col1:
                 ):
                     st.session_state.selected_palace = palace_num
     
-    # Show selected palace info
+    # Selected palace info
     selected = PALACE_INFO[st.session_state.selected_palace]
     st.info(f"**Selected:** #{st.session_state.selected_palace} {selected['name']} - {selected['icon']} **{selected['topic']}** ({selected['hint']})")
     
-    # Generate button - Goes to Chart page with data
+    # Generate button
     if st.button("🔮 Get Your Reading 获取指引", type="primary", use_container_width=True):
         if parsed_time:
             hour, minute = parsed_time
@@ -310,9 +312,8 @@ with col1:
                 "palace": st.session_state.selected_palace,
                 "palace_info": PALACE_INFO[st.session_state.selected_palace],
                 "chinese_hour": get_chinese_hour(hour, minute),
-                "generated_at": datetime.now().isoformat()
+                "generated_at": get_singapore_time().isoformat()
             }
-            # Save shared time for Chart page
             st.session_state.shared_time = f"{hour:02d}:{minute:02d}"
             st.session_state.shared_date = selected_date
             st.success("✅ Reading prepared! Go to **Chart** page to see your guidance.")
@@ -321,37 +322,33 @@ with col1:
             st.error("❌ Please enter a valid time in HH:MM format")
 
 with col2:
-    # User Profile Card with helpful explanations
+    # User Profile Card
     st.markdown("### 👤 Your Profile")
     
     profile = st.session_state.user_profile
     
-    # Day Master
     st.markdown("#### 日主 Day Master")
     st.markdown(f"## {profile.get('day_master', 'Not set')}")
     st.caption(f"{profile.get('element', '')} • {profile.get('polarity', '')} • {profile.get('strength', '')}")
     
     st.markdown("---")
     
-    # Useful Gods with explanation
     st.markdown("#### 用神 Helpful Elements")
     useful = profile.get('useful_gods', [])
     if useful:
         st.success(' • '.join(str(g) for g in useful))
-        st.caption("ℹ️ These elements bring you balance. Seeing them in your reading is a good sign!")
+        st.caption("ℹ️ These elements bring you balance. Seeing them is a good sign!")
     else:
-        st.info("Not set - Go to Settings to calculate")
+        st.info("Not set - Go to Settings")
     
-    # Unfavorable with gentle explanation
     st.markdown("#### 忌神 Challenging Elements")
     unfav = profile.get('unfavorable', [])
     if unfav:
         st.error(' • '.join(str(u) for u in unfav))
-        st.caption("ℹ️ These elements may create obstacles. Be mindful when they appear.")
+        st.caption("ℹ️ Be mindful when these appear.")
     else:
         st.info("Not set")
     
-    # Profile
     st.markdown("#### 性格 Your Nature")
     st.info(profile.get('profile', 'Not set'))
     
@@ -359,11 +356,10 @@ with col2:
     if st.button("⚙️ Update Profile", use_container_width=True):
         st.switch_page("pages/4_Settings.py")
     
-    # Birth info
     if profile.get('birth_date'):
         st.caption(f"📅 {profile.get('birth_date')} {profile.get('birth_time', '')}")
 
-# Mission Statement (collapsible)
+# Mission Statement
 st.markdown("---")
 with st.expander("🌟 About Ming Qimen 关于明奇门", expanded=False):
     st.markdown("""
@@ -385,10 +381,9 @@ with st.expander("🌟 About Ming Qimen 关于明奇门", expanded=False):
     **"Guiding you first, because your peace of mind matters."**
     """)
 
-# Quick Palace Reference (collapsible)
-with st.expander("🏛️ Palace Quick Reference 宫位速查", expanded=False):
+# Palace Reference
+with st.expander("🏛️ Topic Quick Reference 宫位速查", expanded=False):
     ref_cols = st.columns(3)
-    
     for i, col in enumerate(ref_cols):
         with col:
             for palace_num in [i*3 + 1, i*3 + 2, i*3 + 3]:
@@ -401,7 +396,7 @@ with st.expander("🏛️ Palace Quick Reference 宫位速查", expanded=False):
 st.markdown("---")
 col_foot1, col_foot2 = st.columns([3, 1])
 with col_foot1:
-    st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People")
+    st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People | Singapore Time (UTC+8)")
 with col_foot2:
     if st.button("📚 Help & Guide"):
         st.switch_page("pages/5_Help.py")
