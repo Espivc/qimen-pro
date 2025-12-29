@@ -387,6 +387,11 @@ with tab1:
                 }
                 st.success("✅ Profile saved! 档案已保存!")
                 st.balloons()
+                st.info("👉 **Go to Dashboard** to see your updated profile!")
+                
+                # Add button to go to dashboard
+                if st.button("🏠 Go to Dashboard 返回首页"):
+                    st.switch_page("app.py")
         else:
             st.error("❌ Please enter a valid birth time in HH:MM format")
 
