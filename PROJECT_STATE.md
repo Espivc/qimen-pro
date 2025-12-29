@@ -1,248 +1,236 @@
-# 🔮 QI MEN PRO - PROJECT STATE TRACKER
+# 🌟 MING QIMEN 明奇门 - PROJECT STATE TRACKER
 **Last Updated:** 2025-12-29
-**Version:** 2.1 (Phase 3 - IN PROGRESS)
-**Status:** 🟢 LIVE AND WORKING
+**Version:** 3.0 (Ming Qimen Rebrand)
+**Status:** 🟢 LIVE AND EVOLVING
+
+---
+
+## 🌟 BRAND IDENTITY
+
+**Name:** Ming Qimen 明奇门  
+**Tagline:** "Clarity for the People"  
+**Sub-tagline:** "Ancient Wisdom, Made Bright and Simple"  
+**Mission Statement:**
+> I created Ming Qimen because I believe wisdom shouldn't come with a price tag or a headache.
+> My name is Beng (明), which means 'Brightness.' My goal is to use that light to clear the fog 
+> of ancient calculations. Too many apps are built for experts; this one is built for you.
+> No paywalls, no complex data entry—just clear guidance to help you find your way, for free.
+> *Let's help people first, and let the rest follow.*
+
+**Promise:** "Guiding you first, because your peace of mind matters."
 
 ---
 
 ## 📊 PROJECT OVERVIEW
 
-**Purpose:** QMDJ + BaZi Integrated Analysis System  
+**Purpose:** Beginner-friendly QMDJ guidance system  
+**Target User:** First-timers, non-experts, anyone seeking direction  
 **Deployment:** Streamlit Cloud ✅ DEPLOYED  
-**Access:** Desktop (home) + iPhone (travel)  
-**Integration:** Feeds data to Project 1 (Analyst Engine)  
 **Live URL:** https://qimen-pro-qfvejjsappeenzfeuretzw9.streamlit.app/  
 **Repository:** https://github.com/Espivc/qimen-pro
 
 ---
 
-## ✅ COMPLETED PHASES
+## ✅ WHAT'S NEW IN V3.0 (Ming Rebrand)
 
-### **Phase 1: Professional Styling** ✅ COMPLETE
-**Completed:** 2025-12-28
-- Dark theme with gold accents
-- Professional CSS styling
-- Mobile responsive design
+### Brand Changes
+- [x] Renamed from "Qi Men Pro" to "Ming Qimen 明奇门"
+- [x] Removed all "Joey Yap" references
+- [x] Added mission statement and "About Ming" section
+- [x] New taglines throughout
 
----
+### UX Improvements
+- [x] **Auto-populated current time** - Value on first load!
+- [x] **Time syncs between pages** - Dashboard → Chart keeps your selection
+- [x] **Palace recommendation with ⭐** - Shows best topic for current hour
+- [x] **Beginner-friendly terms:**
+  - "Dead (-3)" → "💤 Rest Energy - Wait & Reflect"
+  - "Timely (+3)" → "🔥 High Energy - Take Action!"
+  - "Inauspicious" → "Challenging" or "Caution"
+  - "Death Door" → "Stillness Door"
+  - "Fear Door" → "Surprise Door"
 
-### **Phase 2: Modular Architecture** ✅ COMPLETE
-**Completed:** 2025-12-29
-- 5-page structure
-- Utility modules
-- Basic BaZi Calculator
-- Universal Schema v2.0 export
+### Help & Guide
+- [x] "About Ming" tab with full mission
+- [x] "What is This?" for complete beginners
+- [x] Visual topic grid
+- [x] Simple signs reference
+- [x] Energy levels explained
 
----
-
-### **Phase 3: Enhanced UX & Features** 🔄 IN PROGRESS
-**Started:** 2025-12-29
-
-#### ✅ Completed:
-- [x] Time text input (HH:MM precision)
-- [x] Profile sync fix (Settings → Dashboard)
-- [x] Callback pattern for saves
-- [x] **Help & Guide page** (NEW!)
-- [x] **Quick Reference card in sidebar** (NEW!)
-- [x] **Palace selection with topic hints** (NEW!)
-- [x] **Palace Quick Reference expander** (NEW!)
-
-#### 📋 Pending:
-- [ ] Real QMDJ calculations (kinqimen library)
-- [ ] Formation detection (Joey Yap #64/#73)
-- [ ] Improved export formatting
-- [ ] ML feedback loop
-- [ ] Persistent storage
+### Profile Section
+- [x] "Useful Gods" → "Helpful Elements" with explanation
+- [x] Added ℹ️ info captions explaining each field
+- [x] Gentle, non-scary language throughout
 
 ---
 
-## 📁 CURRENT FILE STRUCTURE
+## 📁 FILE STRUCTURE
 
 ```
-qimen-pro/
+ming-qimen/
 ├── .streamlit/
 │   └── config.toml
 ├── assets/
 │   └── style.css
 ├── pages/
-│   ├── 1_Chart.py
+│   ├── 1_Chart.py          ← 1_Chart_ming.py
 │   ├── 2_Export.py
 │   ├── 3_History.py
-│   ├── 4_Settings.py      ✅ v4 with callback
-│   └── 5_Help.py          ✅ NEW! Help & Guide
-├── utils/
-│   └── [modules]
-├── app.py                 ✅ v4 with palace hints
-├── config.py
+│   ├── 4_Settings.py
+│   └── 5_Help.py           ← 5_Help_ming.py
+├── app.py                  ← app_ming.py
 ├── requirements.txt
 └── PROJECT_STATE.md
 ```
 
 ---
 
-## 🎯 CURRENT FEATURES
+## 🎯 BEGINNER-FRIENDLY TERMINOLOGY
 
-### **Dashboard (app.py v4)** ✅
-- Quick chart with date/time input
-- **Palace grid with topic icons & hints** (NEW!)
-- **Quick Reference in sidebar** (NEW!)
-- BaZi profile card
-- Recent analyses
+### Energy Levels (replaces Strength)
+| Technical Term | Ming Qimen Term | Advice |
+|---------------|-----------------|--------|
+| Timely (+3) | 🔥 High Energy | Take Action! |
+| Prosperous (+2) | ✨ Good Energy | Favorable |
+| Resting (0) | 😐 Balanced | Proceed Normally |
+| Confined (-2) | 🌙 Low Energy | Be Patient |
+| Dead (-3) | 💤 Rest Energy | Wait & Reflect |
 
-### **Help & Guide (5_Help.py)** ✅ NEW!
-- What is QMDJ explanation
-- Step-by-step workflow
-- **Palace selection guide with visual grid**
-- **Quick reference card** (auspicious/inauspicious)
-- Five elements guide
+### Door Names (gentler)
+| Original | Ming Qimen |
+|----------|------------|
+| Death 死门 | Stillness |
+| Fear 惊门 | Surprise |
+| Inauspicious | Challenging |
 
-### **Settings (4_Settings.py v4)** ✅
-- BaZi Calculator with callback save
-- Profile management
-- Debug expander
+### Nature Labels
+| Original | Ming Qimen |
+|----------|------------|
+| Inauspicious | Challenging / Caution |
+| Very Auspicious | Very Favorable / Excellent |
 
 ---
 
-## 🏛️ PALACE REFERENCE (Built into App)
+## 🏛️ PALACE TOPICS
 
-| # | Name | Direction | Topic | Use For |
-|---|------|-----------|-------|---------|
-| 1 | 坎 Kan | N | 💼 Career | Job, business, life path |
-| 2 | 坤 Kun | SW | 💕 Relations | Marriage, partnership |
-| 3 | 震 Zhen | E | 💪 Health | Health, family, new starts |
-| 4 | 巽 Xun | SE | 💰 Wealth | Money, investments |
-| 5 | 中 Center | C | 🎯 Self | General, yourself |
-| 6 | 乾 Qian | NW | 🤝 Mentor | Helpful people, travel |
-| 7 | 兑 Dui | W | 👶 Children | Creativity, joy, projects |
-| 8 | 艮 Gen | NE | 📚 Knowledge | Education, skills |
-| 9 | 离 Li | S | 🌟 Fame | Recognition, reputation |
+| # | Icon | Topic | Description |
+|---|------|-------|-------------|
+| 1 | 💼 | Career | Job, business, life path |
+| 2 | 💕 | Relations | Marriage, partnerships |
+| 3 | 💪 | Health | Health, family, new starts |
+| 4 | 💰 | Wealth | Money, investments |
+| 5 | 🎯 | Self | General, yourself |
+| 6 | 🤝 | Mentor | Helpful people, travel |
+| 7 | 👶 | Children | Creativity, joy, projects |
+| 8 | 📚 | Knowledge | Education, skills |
+| 9 | 🌟 | Fame | Recognition, reputation |
+
+---
+
+## 🔧 TECHNICAL FEATURES
+
+### Time Synchronization
+```python
+# Shared state between pages
+st.session_state.shared_time = "HH:MM"
+st.session_state.shared_date = date
+st.session_state.selected_palace = 1-9
+```
+
+### Palace Recommendation Algorithm
+```python
+def get_recommended_palace(hour, user_profile):
+    # Considers:
+    # 1. Current hour energy
+    # 2. User's helpful elements
+    # 3. Palace elements
+    # Returns: Best palace number for this moment
+```
+
+### Auto-Current Time
+```python
+current_time = datetime.now()
+default_time = current_time.strftime("%H:%M")
+# User sees value immediately!
+```
 
 ---
 
 ## 📋 FUTURE PHASES
 
-### **Phase 4: Real QMDJ Calculations** 📋 PLANNED
+### Phase 4: Real QMDJ Calculations
 - Integrate kinqimen library
-- Chai Bu (拆补) method
-- Full 9-palace chart generation
-- Formation detection from Joey Yap #64/#73
-- Host-Guest analysis (#71)
+- Accurate palace components
+- Formation detection
 
-### **Phase 5: Enhanced BaZi Analysis** 📋 PLANNED
-**Full BaZi module with:**
+### Phase 5: Enhanced BaZi
+- Full strength calculation
+- Ten Gods analysis
+- Special structures
+- Hidden stems
 
-#### 5.1 Complete Four Pillars
-- Hidden Stems (藏干) for each Branch
-- Proper stem/branch combinations
-
-#### 5.2 Day Master Strength Calculation
-- Month season analysis (most important)
-- Element counting from all pillars
-- Hidden stems contribution
-- Strength score (1-10)
-- Accurate Weak/Strong determination
-
-#### 5.3 Ten Gods Analysis
-- Calculate Ten Gods for ALL positions
-- Identify DOMINANT Ten God
-- Accurate personality profile based on chart
-
-#### 5.4 Element Balance
-- Count all elements (stems + hidden)
-- Show element distribution chart
-- Identify missing/excess elements
-
-#### 5.5 Special Structures Detection
-- 财库 Wealth Vault
-- 贵人 Nobleman (天乙, 月德, etc.)
-- 桃花 Peach Blossom
-- 驿马 Traveling Horse
-- 羊刃 Blade
-- 华盖 Canopy
-- Self-punishment, destructions
-
-#### 5.6 Combinations & Clashes
-- 三合 Three Combinations (Fire/Water/Metal/Wood frames)
-- 六合 Six Combinations
-- 六冲 Six Clashes
-- 相刑 Punishments
-- 相害 Harms
-
-#### 5.7 Advanced Features (Optional)
-- 大运 Major Luck Pillars (10-year periods)
-- 流年 Annual Pillars
-- Compatibility analysis
+### Phase 6: Advanced Features
+- Multiple user profiles
+- History analytics
+- Export to calendar
+- Mobile app wrapper
 
 ---
 
-## 🔧 TECHNICAL NOTES
+## 🔄 DEPLOYMENT CHECKLIST
 
-### Callback Pattern (Phase 3 Fix)
-```python
-# This runs BEFORE page rerenders
-st.button("Save", on_click=save_callback)
+### Files to Upload:
+| File | Rename To | Location |
+|------|-----------|----------|
+| `app_ming.py` | `app.py` | Root |
+| `1_Chart_ming.py` | `1_Chart.py` | pages/ |
+| `5_Help_ming.py` | `5_Help.py` | pages/ |
+| `PROJECT_STATE.md` | `PROJECT_STATE.md` | Root |
 
-def save_callback():
-    st.session_state.user_profile = data
-```
-
-### Session State Keys
-- `user_profile` - BaZi profile data
-- `selected_palace` - Currently selected palace (1-9)
-- `calculated_bazi` - Temp storage for BaZi calculation
-- `analyses` - History of analyses
-- `last_chart` - Most recent generated chart
-
----
-
-## 🔄 CONTINUITY INSTRUCTIONS
-
-### Starting New Chat:
-```
-"Continue Qi Men Pro development - check PROJECT_STATE.md.
-Phase 3 in progress, Help page added.
-I want to [your request here]."
-```
-
-### Key Files for Phase 3:
-- `app.py` → `app_v4.py` (with palace hints)
-- `pages/4_Settings.py` → `4_Settings_v4.py` (with callback)
-- `pages/5_Help.py` → NEW Help & Guide page
-
----
-
-## 📖 REFERENCE BOOKS
-
-**Joey Yap QMDJ:**
-- #64: Formations (Auspicious/Inauspicious)
-- #71: Sun Tzu Host/Guest Analysis
-- #72: Timing and Hour Selection
-- #73: Advanced Formations
-
-**BaZi References (for Phase 5):**
-- Hidden Stems tables
-- Ten Gods calculation
-- Special structures rules
-- Combination/clash tables
+### After Upload:
+1. Wait 2-3 minutes for Streamlit rebuild
+2. Test: Current time auto-populates
+3. Test: Time syncs to Chart page
+4. Test: Palace recommendation shows ⭐
+5. Test: Energy levels show (not "Dead")
 
 ---
 
 ## 🎊 PROJECT STATUS SUMMARY
 
-**Phase 3 Progress:** 60% complete
+**Version:** 3.0 Ming Qimen Rebrand  
+**Progress:** Core UX complete ✅
 
-**What's New:**
-- ✅ Help & Guide page with full QMDJ explanation
-- ✅ Palace selection with topic hints
-- ✅ Quick Reference card in sidebar
-- ✅ Palace Quick Reference expander
+**Brand:**
+- ✅ Ming Qimen identity
+- ✅ Mission statement
+- ✅ Beginner-friendly language
 
-**What's Next:**
-- 📋 Real QMDJ calculations (Phase 4)
-- 📋 Enhanced BaZi (Phase 5 - documented above)
+**Features:**
+- ✅ Auto current time
+- ✅ Time sync between pages
+- ✅ Palace recommendation
+- ✅ Energy levels (not "Dead")
+- ✅ Helpful explanations
+
+**Pending:**
+- 📋 Real QMDJ calculations
+- 📋 Enhanced BaZi
+- 📋 Persistent storage
+
+---
+
+## 🧭 CONTINUITY INSTRUCTIONS
+
+### Starting New Chat:
+```
+"Continue Ming Qimen (明奇门) development. 
+Check PROJECT_STATE.md in Espivc/qimen-pro.
+I want to [your request here]."
+```
 
 ---
 
 **END OF PROJECT STATE**  
 *Last updated: 2025-12-29*  
-*Status: 🟢 Phase 3 - Help & UI enhancements complete*
+*🌟 Ming Qimen 明奇门 | Clarity for the People*
