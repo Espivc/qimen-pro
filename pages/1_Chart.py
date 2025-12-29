@@ -1,6 +1,6 @@
 """
-Qi Men Pro - Chart Generator Page
-Phase 3: Fixed HTML rendering - using native Streamlit components
+Ming Qimen 明奇门 - Chart Generator
+Beginner-friendly with energy levels instead of technical terms
 """
 
 import streamlit as st
@@ -8,7 +8,7 @@ from datetime import datetime, date
 import json
 
 st.set_page_config(
-    page_title="Chart Generator | Qi Men Pro",
+    page_title="Chart | Ming Qimen",
     page_icon="📈",
     layout="wide"
 )
@@ -23,67 +23,62 @@ except:
 # ============ CONSTANTS ============
 
 PALACES = {
-    1: {"name": "坎 Kan", "direction": "N", "element": "Water", "icon": "💼"},
-    2: {"name": "坤 Kun", "direction": "SW", "element": "Earth", "icon": "💕"},
-    3: {"name": "震 Zhen", "direction": "E", "element": "Wood", "icon": "💪"},
-    4: {"name": "巽 Xun", "direction": "SE", "element": "Wood", "icon": "💰"},
-    5: {"name": "中 Center", "direction": "C", "element": "Earth", "icon": "🎯"},
-    6: {"name": "乾 Qian", "direction": "NW", "element": "Metal", "icon": "🤝"},
-    7: {"name": "兑 Dui", "direction": "W", "element": "Metal", "icon": "👶"},
-    8: {"name": "艮 Gen", "direction": "NE", "element": "Earth", "icon": "📚"},
-    9: {"name": "离 Li", "direction": "S", "element": "Fire", "icon": "🌟"},
+    1: {"name": "坎 Kan", "direction": "N", "element": "Water", "icon": "💼", "topic": "Career"},
+    2: {"name": "坤 Kun", "direction": "SW", "element": "Earth", "icon": "💕", "topic": "Relations"},
+    3: {"name": "震 Zhen", "direction": "E", "element": "Wood", "icon": "💪", "topic": "Health"},
+    4: {"name": "巽 Xun", "direction": "SE", "element": "Wood", "icon": "💰", "topic": "Wealth"},
+    5: {"name": "中 Center", "direction": "C", "element": "Earth", "icon": "🎯", "topic": "Self"},
+    6: {"name": "乾 Qian", "direction": "NW", "element": "Metal", "icon": "🤝", "topic": "Mentor"},
+    7: {"name": "兑 Dui", "direction": "W", "element": "Metal", "icon": "👶", "topic": "Children"},
+    8: {"name": "艮 Gen", "direction": "NE", "element": "Earth", "icon": "📚", "topic": "Knowledge"},
+    9: {"name": "离 Li", "direction": "S", "element": "Fire", "icon": "🌟", "topic": "Fame"},
 }
 
 STEMS = ["甲 Jia", "乙 Yi", "丙 Bing", "丁 Ding", "戊 Wu", 
          "己 Ji", "庚 Geng", "辛 Xin", "壬 Ren", "癸 Gui"]
 
-BRANCHES = ["子 Zi", "丑 Chou", "寅 Yin", "卯 Mao", "辰 Chen", "巳 Si",
-            "午 Wu", "未 Wei", "申 Shen", "酉 You", "戌 Xu", "亥 Hai"]
-
 STARS = {
-    "天蓬": {"english": "Canopy", "element": "Water", "nature": "Inauspicious"},
-    "天芮": {"english": "Grass", "element": "Earth", "nature": "Inauspicious"},
-    "天冲": {"english": "Impulse", "element": "Wood", "nature": "Auspicious"},
-    "天辅": {"english": "Assistant", "element": "Wood", "nature": "Auspicious"},
-    "天禽": {"english": "Connect", "element": "Earth", "nature": "Neutral"},
-    "天心": {"english": "Heart", "element": "Metal", "nature": "Auspicious"},
-    "天柱": {"english": "Pillar", "element": "Metal", "nature": "Neutral"},
-    "天任": {"english": "Ren", "element": "Earth", "nature": "Auspicious"},
-    "天英": {"english": "Hero", "element": "Fire", "nature": "Neutral"},
+    "天蓬": {"english": "Canopy", "element": "Water", "nature": "Challenging", "meaning": "Hidden obstacles"},
+    "天芮": {"english": "Grass", "element": "Earth", "nature": "Challenging", "meaning": "Slow progress"},
+    "天冲": {"english": "Impulse", "element": "Wood", "nature": "Favorable", "meaning": "Quick action"},
+    "天辅": {"english": "Assistant", "element": "Wood", "nature": "Favorable", "meaning": "Help available"},
+    "天禽": {"english": "Connect", "element": "Earth", "nature": "Neutral", "meaning": "Connections matter"},
+    "天心": {"english": "Heart", "element": "Metal", "nature": "Very Favorable", "meaning": "Wisdom & clarity"},
+    "天柱": {"english": "Pillar", "element": "Metal", "nature": "Neutral", "meaning": "Stand firm"},
+    "天任": {"english": "Ren", "element": "Earth", "nature": "Favorable", "meaning": "Steady progress"},
+    "天英": {"english": "Hero", "element": "Fire", "nature": "Neutral", "meaning": "Recognition possible"},
 }
 
 DOORS = {
-    "开门": {"english": "Open", "element": "Metal", "nature": "Auspicious"},
-    "休门": {"english": "Rest", "element": "Water", "nature": "Auspicious"},
-    "生门": {"english": "Life", "element": "Earth", "nature": "Auspicious"},
-    "伤门": {"english": "Harm", "element": "Wood", "nature": "Inauspicious"},
-    "杜门": {"english": "Delusion", "element": "Wood", "nature": "Neutral"},
-    "景门": {"english": "Scenery", "element": "Fire", "nature": "Neutral"},
-    "死门": {"english": "Death", "element": "Earth", "nature": "Inauspicious"},
-    "惊门": {"english": "Fear", "element": "Metal", "nature": "Inauspicious"},
+    "开门": {"english": "Open", "element": "Metal", "nature": "Very Favorable", "meaning": "New opportunities await"},
+    "休门": {"english": "Rest", "element": "Water", "nature": "Favorable", "meaning": "Good for meetings"},
+    "生门": {"english": "Life", "element": "Earth", "nature": "Very Favorable", "meaning": "Growth & prosperity"},
+    "伤门": {"english": "Harm", "element": "Wood", "nature": "Challenging", "meaning": "Caution with words"},
+    "杜门": {"english": "Delusion", "element": "Wood", "nature": "Neutral", "meaning": "Things unclear, wait"},
+    "景门": {"english": "Scenery", "element": "Fire", "nature": "Neutral", "meaning": "Good for documents"},
+    "死门": {"english": "Stillness", "element": "Earth", "nature": "Challenging", "meaning": "Rest & reflect"},
+    "惊门": {"english": "Surprise", "element": "Metal", "nature": "Challenging", "meaning": "Expect the unexpected"},
 }
 
 DEITIES = {
-    "值符": {"english": "Chief", "nature": "Auspicious"},
-    "腾蛇": {"english": "Serpent", "nature": "Inauspicious"},
-    "太阴": {"english": "Moon", "nature": "Auspicious"},
-    "六合": {"english": "Six Harmony", "nature": "Auspicious"},
-    "勾陈": {"english": "Hook", "nature": "Neutral"},
-    "白虎": {"english": "Tiger", "nature": "Inauspicious"},
-    "玄武": {"english": "Emptiness", "nature": "Inauspicious"},
-    "九地": {"english": "Nine Earth", "nature": "Neutral"},
-    "九天": {"english": "Nine Heaven", "nature": "Auspicious"},
+    "值符": {"english": "Chief", "nature": "Very Favorable", "meaning": "Blessings from above"},
+    "腾蛇": {"english": "Serpent", "nature": "Challenging", "meaning": "Worry & anxiety"},
+    "太阴": {"english": "Moon", "nature": "Favorable", "meaning": "Hidden help"},
+    "六合": {"english": "Harmony", "nature": "Favorable", "meaning": "Cooperation succeeds"},
+    "勾陈": {"english": "Hook", "nature": "Neutral", "meaning": "Delays possible"},
+    "白虎": {"english": "Tiger", "nature": "Challenging", "meaning": "Be careful"},
+    "玄武": {"english": "Void", "nature": "Challenging", "meaning": "Something unclear"},
+    "九地": {"english": "Earth", "nature": "Neutral", "meaning": "Stay grounded"},
+    "九天": {"english": "Heaven", "nature": "Favorable", "meaning": "Go big, expand"},
 }
 
-FORMATIONS = {
-    "伏吟": {"english": "Fu Yin (Hidden Voice)", "nature": "Inauspicious", "meaning": "Stagnation, delay"},
-    "反吟": {"english": "Fan Yin (Returning Voice)", "nature": "Inauspicious", "meaning": "Reversal, change"},
-    "天遁": {"english": "Tian Dun (Heaven Escape)", "nature": "Very Auspicious", "meaning": "Divine help"},
-    "地遁": {"english": "Di Dun (Earth Escape)", "nature": "Very Auspicious", "meaning": "Hidden support"},
-    "人遁": {"english": "Ren Dun (Human Escape)", "nature": "Auspicious", "meaning": "Help from people"},
-    "龙遁": {"english": "Long Dun (Dragon Escape)", "nature": "Auspicious", "meaning": "Power, authority"},
-    "虎遁": {"english": "Hu Dun (Tiger Escape)", "nature": "Neutral", "meaning": "Courage needed"},
-    "风遁": {"english": "Feng Dun (Wind Escape)", "nature": "Auspicious", "meaning": "Quick success"},
+# Beginner-friendly energy levels
+ENERGY_LEVELS = {
+    3: {"label": "🔥 High Energy", "advice": "Take Action!", "color": "green"},
+    2: {"label": "✨ Good Energy", "advice": "Favorable", "color": "green"},
+    0: {"label": "😐 Balanced", "advice": "Proceed Normally", "color": "orange"},
+    -2: {"label": "🌙 Low Energy", "advice": "Be Patient", "color": "orange"},
+    -3: {"label": "💤 Rest Energy", "advice": "Wait & Reflect", "color": "red"},
 }
 
 # ============ HELPER FUNCTIONS ============
@@ -126,33 +121,36 @@ def calculate_ju_number(year, month, day, hour):
     base = (year + month + day + hour) % 9
     return base if base > 0 else 9
 
-def calculate_strength(comp_element, palace_element):
-    """Calculate element strength relative to palace"""
+def calculate_energy(comp_element, palace_element):
+    """Calculate energy level (beginner-friendly version of strength)"""
     cycle = ["Wood", "Fire", "Earth", "Metal", "Water"]
     if comp_element not in cycle or palace_element not in cycle:
-        return ("Unknown", 0)
+        return (0, ENERGY_LEVELS[0])
     
     comp_idx = cycle.index(comp_element)
     palace_idx = cycle.index(palace_element)
     diff = (comp_idx - palace_idx) % 5
     
     if diff == 0:
-        return ("Timely", 3)
+        return (3, ENERGY_LEVELS[3])
     elif diff == 1:
-        return ("Prosperous", 2)
+        return (2, ENERGY_LEVELS[2])
     elif diff == 2:
-        return ("Resting", 0)
+        return (0, ENERGY_LEVELS[0])
     elif diff == 3:
-        return ("Confined", -2)
+        return (-2, ENERGY_LEVELS[-2])
     else:
-        return ("Dead", -3)
+        return (-3, ENERGY_LEVELS[-3])
 
-def get_nature_color(nature):
-    if "Auspicious" in str(nature):
-        return "green"
-    elif "Inauspicious" in str(nature):
-        return "red"
-    return "orange"
+def get_nature_display(nature):
+    """Convert nature to emoji and color"""
+    if "Very Favorable" in str(nature):
+        return "🌟", "green", "Excellent!"
+    elif "Favorable" in str(nature):
+        return "✅", "green", "Good"
+    elif "Challenging" in str(nature):
+        return "⚠️", "red", "Caution"
+    return "😐", "orange", "Neutral"
 
 def generate_qmdj_chart(selected_date, hour, minute, palace_number):
     """Generate QMDJ chart data"""
@@ -163,7 +161,7 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
     chinese_hour = get_chinese_hour(hour, minute)
     palace = PALACES[palace_number]
     
-    # Calculate components (simplified)
+    # Calculate components
     seed = selected_date.year * 10000 + selected_date.month * 100 + selected_date.day + hour + palace_number
     
     stem_idx = seed % 10
@@ -186,13 +184,6 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
     
     palace_element = palace["element"]
     
-    # Formation detection (simplified)
-    formation = None
-    formation_keys = list(FORMATIONS.keys())
-    if (seed % 7) == 0:
-        formation_cn = formation_keys[seed % len(formation_keys)]
-        formation = {"chinese": formation_cn, **FORMATIONS[formation_cn]}
-    
     chart = {
         "metadata": {
             "date": selected_date.isoformat(),
@@ -207,7 +198,8 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
             "name": palace["name"],
             "direction": palace["direction"],
             "element": palace_element,
-            "icon": palace["icon"]
+            "icon": palace["icon"],
+            "topic": palace["topic"]
         },
         "components": {
             "heaven_stem": STEMS[stem_idx],
@@ -217,50 +209,78 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
                 "english": star["english"],
                 "element": star["element"],
                 "nature": star["nature"],
-                "strength": calculate_strength(star["element"], palace_element)
+                "meaning": star["meaning"],
+                "energy": calculate_energy(star["element"], palace_element)
             },
             "door": {
                 "chinese": door_cn,
                 "english": door["english"],
                 "element": door["element"],
                 "nature": door["nature"],
-                "strength": calculate_strength(door["element"], palace_element)
+                "meaning": door["meaning"],
+                "energy": calculate_energy(door["element"], palace_element)
             },
             "deity": {
                 "chinese": deity_cn,
                 "english": deity["english"],
-                "nature": deity["nature"]
+                "nature": deity["nature"],
+                "meaning": deity["meaning"]
             }
-        },
-        "formation": formation
+        }
     }
     
-    # Calculate verdict
+    # Calculate overall guidance
     natures = [star["nature"], door["nature"], deity["nature"]]
-    auspicious = sum(1 for n in natures if "Auspicious" in n)
-    inauspicious = sum(1 for n in natures if "Inauspicious" in n)
+    favorable = sum(1 for n in natures if "Favorable" in n)
+    challenging = sum(1 for n in natures if "Challenging" in n)
     
-    if auspicious >= 2:
-        chart["verdict"] = {"text": "Auspicious 吉", "type": "success", "advice": "Favorable for action. Proceed with confidence."}
-    elif inauspicious >= 2:
-        chart["verdict"] = {"text": "Inauspicious 凶", "type": "error", "advice": "Caution advised. Consider alternative timing."}
+    if favorable >= 2:
+        chart["guidance"] = {
+            "verdict": "Green Light 🟢",
+            "summary": "Favorable conditions for action",
+            "advice": f"Good time for {palace['topic'].lower()} matters. Move forward with confidence!",
+            "type": "success"
+        }
+    elif challenging >= 2:
+        chart["guidance"] = {
+            "verdict": "Yellow Light 🟡",
+            "summary": "Proceed with awareness",
+            "advice": f"Not ideal for {palace['topic'].lower()} matters. Consider waiting or extra preparation.",
+            "type": "warning"
+        }
     else:
-        chart["verdict"] = {"text": "Neutral 平", "type": "warning", "advice": "Mixed signals. Proceed with awareness."}
+        chart["guidance"] = {
+            "verdict": "Neutral ⚪",
+            "summary": "Mixed signals",
+            "advice": f"Balanced energy for {palace['topic'].lower()}. Success depends on your effort.",
+            "type": "info"
+        }
     
     return chart
 
 # ============ PAGE CONTENT ============
 
-st.title("📈 Chart Generator 奇门起盘")
+st.markdown("""
+<div style="text-align: center;">
+    <h1 style="color: #d4af37;">📈 Your Reading 您的指引</h1>
+    <p style="color: #888;">Ming Qimen 明奇门</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Get time from shared state or use current
+current_time = datetime.now()
+default_date = st.session_state.get('shared_date', current_time.date())
+default_time = st.session_state.get('shared_time', current_time.strftime("%H:%M"))
+default_palace = st.session_state.get('selected_palace', 5)
 
 # Input Section
 col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
-    selected_date = st.date_input("📅 Date 日期", value=datetime.now().date())
+    selected_date = st.date_input("📅 Date 日期", value=default_date)
 
 with col2:
-    time_input = st.text_input("⏰ Time (HH:MM)", value=datetime.now().strftime("%H:%M"))
+    time_input = st.text_input("⏰ Time (HH:MM)", value=default_time)
     parsed_time = parse_time_input(time_input)
     if parsed_time:
         hour, minute = parsed_time
@@ -272,18 +292,18 @@ with col2:
 
 with col3:
     palace_number = st.selectbox(
-        "🏛️ Palace 宫位",
+        "🏛️ Topic 主题",
         options=list(PALACES.keys()),
-        format_func=lambda x: f"#{x} {PALACES[x]['icon']} {PALACES[x]['name']}",
-        index=4
+        format_func=lambda x: f"#{x} {PALACES[x]['icon']} {PALACES[x]['topic']}",
+        index=default_palace - 1
     )
 
 # Generate Button
-if st.button("🔮 Generate QMDJ Chart 生成奇门盘", type="primary", use_container_width=True):
+if st.button("🔮 Get Guidance 获取指引", type="primary", use_container_width=True):
     if parsed_time:
         chart = generate_qmdj_chart(selected_date, hour, minute, palace_number)
         st.session_state.current_chart = chart
-        st.success("✅ Chart Generated! 盘局已生成!")
+        st.success("✅ Your guidance is ready!")
 
 # Display Chart Results
 if 'current_chart' in st.session_state and st.session_state.current_chart:
@@ -291,127 +311,108 @@ if 'current_chart' in st.session_state and st.session_state.current_chart:
     
     st.markdown("---")
     
-    # Metadata
-    st.markdown(f"### 🏛️ Palace #{chart['palace']['number']} - {chart['palace']['name']}")
-    st.markdown(f"**Direction 方位:** {chart['palace']['direction']} | **Element 五行:** {chart['palace']['element']}")
+    # Topic Header
+    palace = chart['palace']
+    st.markdown(f"### {palace['icon']} Your {palace['topic']} Reading")
+    st.markdown(f"**Palace:** #{palace['number']} {palace['name']} | **Element:** {palace['element']}")
     
+    # Time info
     meta_cols = st.columns(4)
     meta_cols[0].metric("📅 Date", chart['metadata']['date'])
     meta_cols[1].metric("⏰ Time", chart['metadata']['time'])
     meta_cols[2].metric("🕐 时辰", chart['metadata']['chinese_hour'])
-    meta_cols[3].metric("局", f"{chart['metadata']['structure']} #{chart['metadata']['ju_number']}")
+    meta_cols[3].metric("Structure", f"#{chart['metadata']['ju_number']}")
     
-    # Components - Using NATIVE Streamlit (no complex HTML!)
-    st.markdown("### 📋 Components 组件")
+    # MAIN GUIDANCE - Big and clear!
+    st.markdown("---")
+    guidance = chart['guidance']
     
-    comp_cols = st.columns(5)
+    if guidance['type'] == 'success':
+        st.success(f"## {guidance['verdict']}")
+        st.success(f"**{guidance['summary']}**")
+    elif guidance['type'] == 'warning':
+        st.warning(f"## {guidance['verdict']}")
+        st.warning(f"**{guidance['summary']}**")
+    else:
+        st.info(f"## {guidance['verdict']}")
+        st.info(f"**{guidance['summary']}**")
     
-    # Heaven Stem
-    with comp_cols[0]:
-        st.markdown("**Heaven Stem 天干**")
-        st.markdown(f"### {chart['components']['heaven_stem']}")
+    st.markdown(f"### 💡 Advice: {guidance['advice']}")
     
-    # Earth Stem
-    with comp_cols[1]:
-        st.markdown("**Earth Stem 地干**")
-        st.markdown(f"### {chart['components']['earth_stem']}")
+    # Components - Beginner friendly
+    st.markdown("---")
+    st.markdown("### 📋 What the Signs Say 详细信息")
+    
+    comp_cols = st.columns(3)
     
     # Star
-    with comp_cols[2]:
+    with comp_cols[0]:
         star = chart['components']['star']
-        st.markdown("**Star 九星**")
+        emoji, color, label = get_nature_display(star['nature'])
+        
+        st.markdown(f"**Star 九星** {emoji}")
         st.markdown(f"### {star['chinese']} {star['english']}")
-        nature_color = get_nature_color(star['nature'])
-        if nature_color == "green":
-            st.success(f"{star['nature']}")
-        elif nature_color == "red":
-            st.error(f"{star['nature']}")
+        
+        if "Favorable" in star['nature']:
+            st.success(f"{star['meaning']}")
+        elif "Challenging" in star['nature']:
+            st.error(f"{star['meaning']}")
         else:
-            st.warning(f"{star['nature']}")
-        st.caption(f"{star['strength'][0]} ({star['strength'][1]:+d})")
+            st.warning(f"{star['meaning']}")
+        
+        # Energy level
+        energy_score, energy_info = star['energy']
+        st.caption(f"{energy_info['label']} - {energy_info['advice']}")
     
     # Door
-    with comp_cols[3]:
+    with comp_cols[1]:
         door = chart['components']['door']
-        st.markdown("**Door 八门**")
+        emoji, color, label = get_nature_display(door['nature'])
+        
+        st.markdown(f"**Door 八门** {emoji}")
         st.markdown(f"### {door['chinese']} {door['english']}")
-        nature_color = get_nature_color(door['nature'])
-        if nature_color == "green":
-            st.success(f"{door['nature']}")
-        elif nature_color == "red":
-            st.error(f"{door['nature']}")
+        
+        if "Favorable" in door['nature']:
+            st.success(f"{door['meaning']}")
+        elif "Challenging" in door['nature']:
+            st.error(f"{door['meaning']}")
         else:
-            st.warning(f"{door['nature']}")
-        st.caption(f"{door['strength'][0]} ({door['strength'][1]:+d})")
+            st.warning(f"{door['meaning']}")
+        
+        # Energy level
+        energy_score, energy_info = door['energy']
+        st.caption(f"{energy_info['label']} - {energy_info['advice']}")
     
     # Deity
-    with comp_cols[4]:
+    with comp_cols[2]:
         deity = chart['components']['deity']
-        st.markdown("**Deity 八神**")
+        emoji, color, label = get_nature_display(deity['nature'])
+        
+        st.markdown(f"**Spirit 八神** {emoji}")
         st.markdown(f"### {deity['chinese']} {deity['english']}")
-        nature_color = get_nature_color(deity['nature'])
-        if nature_color == "green":
-            st.success(f"{deity['nature']}")
-        elif nature_color == "red":
-            st.error(f"{deity['nature']}")
-        else:
-            st.warning(f"{deity['nature']}")
-    
-    # Formation
-    if chart.get('formation'):
-        st.markdown("---")
-        st.markdown("### 🌟 Formation Detected! 格局发现!")
-        formation = chart['formation']
-        nature_color = get_nature_color(formation['nature'])
         
-        if nature_color == "green":
-            st.success(f"**{formation['chinese']}** - {formation['english']}")
-        elif nature_color == "red":
-            st.error(f"**{formation['chinese']}** - {formation['english']}")
+        if "Favorable" in deity['nature']:
+            st.success(f"{deity['meaning']}")
+        elif "Challenging" in deity['nature']:
+            st.error(f"{deity['meaning']}")
         else:
-            st.warning(f"**{formation['chinese']}** - {formation['english']}")
+            st.warning(f"{deity['meaning']}")
+    
+    # Stems (simplified)
+    st.markdown("---")
+    with st.expander("🔍 More Details 更多详情", expanded=False):
+        stem_cols = st.columns(2)
+        with stem_cols[0]:
+            st.markdown(f"**Heaven Stem 天干:** {chart['components']['heaven_stem']}")
+        with stem_cols[1]:
+            st.markdown(f"**Earth Stem 地干:** {chart['components']['earth_stem']}")
         
-        st.markdown(f"**Nature:** {formation['nature']} | **Meaning:** {formation['meaning']}")
-    
-    # Verdict
-    st.markdown("---")
-    st.markdown("### 📝 Verdict 判断")
-    
-    verdict = chart['verdict']
-    if verdict['type'] == 'success':
-        st.success(f"## {verdict['text']}")
-    elif verdict['type'] == 'error':
-        st.error(f"## {verdict['text']}")
-    else:
-        st.warning(f"## {verdict['text']}")
-    
-    st.markdown(f"**Advice:** {verdict['advice']}")
-    
-    # Export Options
-    st.markdown("---")
-    st.markdown("### 📤 Export")
-    
-    export_cols = st.columns(2)
-    
-    with export_cols[0]:
-        json_str = json.dumps(chart, indent=2, ensure_ascii=False)
-        st.download_button(
-            "📥 Download JSON",
-            data=json_str,
-            file_name=f"qmdj_{chart['metadata']['date']}_{chart['metadata']['time'].replace(':', '')}.json",
-            mime="application/json",
-            use_container_width=True
-        )
-    
-    with export_cols[1]:
-        if st.button("📋 Show JSON", use_container_width=True):
-            st.json(chart)
+        st.json(chart)
     
     # Save to history
     if 'analyses' not in st.session_state:
         st.session_state.analyses = []
     
-    # Check if already saved
     existing = [a for a in st.session_state.analyses 
                 if a.get('date') == chart['metadata']['date'] 
                 and a.get('time') == chart['metadata']['time']
@@ -422,11 +423,11 @@ if 'current_chart' in st.session_state and st.session_state.current_chart:
             "date": chart['metadata']['date'],
             "time": chart['metadata']['time'],
             "palace": chart['palace']['number'],
-            "verdict": verdict['text'],
-            "formation": chart['formation']['english'] if chart.get('formation') else None,
+            "topic": chart['palace']['topic'],
+            "verdict": guidance['verdict'],
             "generated_at": datetime.now().isoformat()
         })
 
 # Footer
 st.markdown("---")
-st.caption("📈 Qi Men Pro Chart Generator | Phase 3 | Joey Yap Methodology")
+st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People")
