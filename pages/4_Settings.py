@@ -1,581 +1,483 @@
 """
-Settings Page - Qi Men Pro v2.0
-Profile configuration and database management
+Qi Men Pro - Settings Page
+Phase 3: Enhanced BaZi Calculator with precise time input
 """
 
 import streamlit as st
-import sys
-from pathlib import Path
 from datetime import datetime, date
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from config import ELEMENT_EMOJI
-from utils.bazi_profile import (
-    load_profile, save_profile, get_default_profile,
-    DAY_MASTER_OPTIONS, TEN_GOD_PROFILE_OPTIONS
-)
-from utils.database import get_all_records, get_statistics, clear_database, export_to_csv_string
-from utils.bazi_calculator import calculate_full_profile, get_hour_branch_name, EARTHLY_BRANCHES
-
 st.set_page_config(
-    page_title="Settings 设置 - Qi Men Pro",
+    page_title="Settings | Qi Men Pro",
     page_icon="⚙️",
     layout="wide"
 )
 
-# Element colors
-ELEMENT_COLORS = {
-    "Wood": "#4CAF50",
-    "Fire": "#F44336",
-    "Earth": "#CD853F",
-    "Metal": "#C0C0C0",
-    "Water": "#4169E1"
+# Load custom CSS
+try:
+    with open("assets/style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except:
+    pass
+
+# ============ BAZI CALCULATOR FUNCTIONS ============
+
+# Heavenly Stems
+STEMS = ["甲 Jia", "乙 Yi", "丙 Bing", "丁 Ding", "戊 Wu", 
+         "己 Ji", "庚 Geng", "辛 Xin", "壬 Ren", "癸 Gui"]
+
+STEM_ELEMENTS = {
+    "甲 Jia": ("Wood 木", "Yang"),
+    "乙 Yi": ("Wood 木", "Yin"),
+    "丙 Bing": ("Fire 火", "Yang"),
+    "丁 Ding": ("Fire 火", "Yin"),
+    "戊 Wu": ("Earth 土", "Yang"),
+    "己 Ji": ("Earth 土", "Yin"),
+    "庚 Geng": ("Metal 金", "Yang"),
+    "辛 Xin": ("Metal 金", "Yin"),
+    "壬 Ren": ("Water 水", "Yang"),
+    "癸 Gui": ("Water 水", "Yin"),
 }
 
-ELEMENT_CHINESE = {
-    "Wood": "木",
-    "Fire": "火",
-    "Earth": "土",
-    "Metal": "金",
-    "Water": "水"
+# Earthly Branches
+BRANCHES = ["子 Zi", "丑 Chou", "寅 Yin", "卯 Mao", "辰 Chen", "巳 Si",
+            "午 Wu", "未 Wei", "申 Shen", "酉 You", "戌 Xu", "亥 Hai"]
+
+BRANCH_ANIMALS = {
+    "子 Zi": "Rat 🐀",
+    "丑 Chou": "Ox 🐂",
+    "寅 Yin": "Tiger 🐅",
+    "卯 Mao": "Rabbit 🐇",
+    "辰 Chen": "Dragon 🐉",
+    "巳 Si": "Snake 🐍",
+    "午 Wu": "Horse 🐴",
+    "未 Wei": "Goat 🐐",
+    "申 Shen": "Monkey 🐒",
+    "酉 You": "Rooster 🐓",
+    "戌 Xu": "Dog 🐕",
+    "亥 Hai": "Pig 🐖",
 }
 
-# Custom CSS for better visibility
-st.markdown("""
-<style>
-    .stApp { background-color: #1a1a2e; }
-    [data-testid="stSidebar"] { background-color: #16213e; }
-    h1, h2, h3, h4, h5 { color: #d4af37 !important; }
-    p, span, label, .stMarkdown { color: #e0e0e0 !important; }
-    .stRadio label span, .stCheckbox label span { color: #e0e0e0 !important; }
-    .stSelectbox label, .stTextInput label { color: #e0e0e0 !important; }
-    .preview-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #16213e 100%);
-        border: 2px solid #d4af37;
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
+TEN_GODS = {
+    "Friend": "比肩 Bi Jian - Competitor, peer, sibling energy",
+    "Rob Wealth": "劫财 Jie Cai - Risk-taker, aggressive competitor",
+    "Eating God": "食神 Shi Shen - Creative, artistic, easy-going",
+    "Hurting Officer": "伤官 Shang Guan - Rebellious, innovative, critical",
+    "Direct Wealth": "正财 Zheng Cai - Steady income, practical, hardworking",
+    "Indirect Wealth": "偏财 Pian Cai - Windfall, speculative, entrepreneurial",
+    "Direct Officer": "正官 Zheng Guan - Authority, status, conventional",
+    "7 Killings": "七杀 Qi Sha - Ambitious, competitive, warrior spirit",
+    "Direct Resource": "正印 Zheng Yin - Learning, nurturing, traditional knowledge",
+    "Indirect Resource": "偏印 Pian Yin - Unconventional wisdom, intuition, esoteric"
+}
+
+PROFILES = {
+    "Friend": ("Competitor", "💪"),
+    "Rob Wealth": ("Risk Taker", "🎲"),
+    "Eating God": ("Artist", "🎨"),
+    "Hurting Officer": ("Innovator", "💡"),
+    "Direct Wealth": ("Worker", "🔧"),
+    "Indirect Wealth": ("Pioneer", "🎯"),
+    "Direct Officer": ("Manager", "👔"),
+    "7 Killings": ("Warrior", "⚔️"),
+    "Direct Resource": ("Philosopher", "📚"),
+    "Indirect Resource": ("Mystic", "🔮")
+}
+
+
+def parse_time_input(time_str):
+    """Parse time string in HH:MM format"""
+    try:
+        time_str = time_str.strip().replace("：", ":").replace(".", ":")
+        if ":" in time_str:
+            parts = time_str.split(":")
+            hour = int(parts[0])
+            minute = int(parts[1]) if len(parts) > 1 else 0
+        else:
+            hour = int(time_str)
+            minute = 0
+        
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return (hour, minute)
+        return None
+    except:
+        return None
+
+
+def get_hour_branch(hour, minute=0):
+    """Get the Earthly Branch for a given hour (with minute precision)"""
+    # Handle late-night 子时 (23:00-00:59)
+    total_minutes = hour * 60 + minute
+    
+    if total_minutes >= 23 * 60 or total_minutes < 1 * 60:
+        return 0  # 子 Zi
+    
+    # Each 时辰 is 2 hours
+    # 01:00-02:59 = 丑 Chou (index 1)
+    # 03:00-04:59 = 寅 Yin (index 2)
+    # etc.
+    branch_index = (hour + 1) // 2
+    if branch_index >= 12:
+        branch_index = 0
+    
+    return branch_index
+
+
+def calculate_year_pillar(year):
+    """Calculate Year Pillar (年柱) - simplified"""
+    stem_index = (year - 4) % 10
+    branch_index = (year - 4) % 12
+    return STEMS[stem_index], BRANCHES[branch_index]
+
+
+def calculate_month_pillar(year, month, day):
+    """Calculate Month Pillar (月柱) - simplified using solar terms approximation"""
+    # Simplified: using month directly (proper version needs solar terms 节气)
+    # This is an approximation - real BaZi uses 24 solar terms
+    
+    # Adjust for solar terms (approximate - day > 5 uses current month)
+    adjusted_month = month if day >= 5 else (month - 1 if month > 1 else 12)
+    
+    year_stem_index = (year - 4) % 10
+    # Month stem calculation (based on year stem)
+    month_stem_base = (year_stem_index % 5) * 2
+    month_stem_index = (month_stem_base + adjusted_month - 1) % 10
+    
+    # Month branch is fixed: 寅=1月, 卯=2月, etc. (starts from 寅 Yin for month 1)
+    month_branch_index = (adjusted_month + 1) % 12
+    
+    return STEMS[month_stem_index], BRANCHES[month_branch_index]
+
+
+def calculate_day_pillar(year, month, day):
+    """Calculate Day Pillar (日柱) using a simplified algorithm"""
+    # This is a simplified calculation
+    # Real BaZi uses the 10,000 year calendar (万年历)
+    
+    from datetime import date as dt_date
+    
+    # Reference date: 1900-01-01 was 甲子 (Jia-Zi) day
+    ref_date = dt_date(1900, 1, 1)
+    target_date = dt_date(year, month, day)
+    
+    days_diff = (target_date - ref_date).days
+    
+    # Adjust for the actual reference (1900-01-01 was actually 甲戌)
+    # Using 甲子 as base, offset by 10 for stem and 10 for branch
+    stem_index = (days_diff + 10) % 10
+    branch_index = (days_diff + 10) % 12
+    
+    return STEMS[stem_index], BRANCHES[branch_index]
+
+
+def calculate_hour_pillar(day_stem, hour, minute=0):
+    """Calculate Hour Pillar (时柱)"""
+    hour_branch_index = get_hour_branch(hour, minute)
+    
+    # Hour stem is based on Day stem
+    day_stem_index = STEMS.index(day_stem)
+    hour_stem_base = (day_stem_index % 5) * 2
+    hour_stem_index = (hour_stem_base + hour_branch_index) % 10
+    
+    return STEMS[hour_stem_index], BRANCHES[hour_branch_index]
+
+
+def analyze_day_master(day_stem):
+    """Analyze Day Master strength and useful gods"""
+    element, polarity = STEM_ELEMENTS[day_stem]
+    
+    # Simplified strength analysis
+    # In real BaZi, this requires analyzing the entire chart
+    analysis = {
+        "day_master": day_stem,
+        "element": element,
+        "polarity": polarity,
+        "strength": "Moderate",  # Simplified - real analysis is complex
+        "useful_gods": [],
+        "unfavorable": [],
+        "profile": ""
     }
-    .chinese-big {
-        font-size: 5rem;
-        color: #d4af37;
-        font-weight: bold;
+    
+    # Determine useful gods based on element (simplified logic)
+    element_short = element.split()[0]  # Get just "Wood", "Fire", etc.
+    
+    element_cycle = ["Wood", "Fire", "Earth", "Metal", "Water"]
+    elem_idx = element_cycle.index(element_short)
+    
+    # For weak Day Master, useful gods are: Resource (produces DM) and Friend (same)
+    # For strong Day Master, useful gods are: Wealth, Officer, Output
+    
+    # Simplified: assume moderate-weak, so support elements are useful
+    resource_elem = element_cycle[(elem_idx - 1) % 5]  # Element that produces DM
+    same_elem = element_short  # Same element
+    
+    analysis["useful_gods"] = [f"{resource_elem}", f"{same_elem}"]
+    
+    # Unfavorable: what DM produces and what controls DM
+    output_elem = element_cycle[(elem_idx + 1) % 5]
+    controller_elem = element_cycle[(elem_idx + 2) % 5]
+    
+    analysis["unfavorable"] = [f"{controller_elem}", f"{output_elem}"]
+    
+    # Profile based on dominant Ten God (simplified - assumes Indirect Wealth for variety)
+    analysis["profile"] = "Pioneer 🎯 (Indirect Wealth 偏财)"
+    
+    return analysis
+
+
+def calculate_full_bazi(year, month, day, hour, minute=0):
+    """Calculate complete Four Pillars"""
+    year_stem, year_branch = calculate_year_pillar(year)
+    month_stem, month_branch = calculate_month_pillar(year, month, day)
+    day_stem, day_branch = calculate_day_pillar(year, month, day)
+    hour_stem, hour_branch = calculate_hour_pillar(day_stem, hour, minute)
+    
+    return {
+        "year": {"stem": year_stem, "branch": year_branch, "animal": BRANCH_ANIMALS[year_branch]},
+        "month": {"stem": month_stem, "branch": month_branch},
+        "day": {"stem": day_stem, "branch": day_branch},
+        "hour": {"stem": hour_stem, "branch": hour_branch},
+        "day_master_analysis": analyze_day_master(day_stem)
     }
-    .profile-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #2a3f5f;
-    }
-    .profile-label { color: #888 !important; }
-    .profile-value { color: #fff !important; font-weight: 500; }
-</style>
-""", unsafe_allow_html=True)
 
-# Initialize session state
-if 'profile' not in st.session_state:
-    st.session_state.profile = load_profile()
 
-# Helper functions
-def get_profile_value(profile, key, default=""):
-    value = profile.get(key, default)
-    if key == "day_master" and isinstance(value, dict):
-        return value.get("pinyin", default)
-    return value
+# ============ PAGE CONTENT ============
 
-def get_profile_chinese(profile):
-    dm = profile.get("day_master", "Geng")
-    if isinstance(dm, dict):
-        return dm.get("chinese", "庚")
-    return DAY_MASTER_OPTIONS.get(dm, {}).get("chinese", "庚")
-
-def get_profile_element(profile):
-    dm = profile.get("day_master", "Geng")
-    if isinstance(dm, dict):
-        return dm.get("element", "Metal")
-    if profile.get("element"):
-        return profile.get("element")
-    return DAY_MASTER_OPTIONS.get(dm, {}).get("element", "Metal")
-
-def get_profile_polarity(profile):
-    dm = profile.get("day_master", "Geng")
-    if isinstance(dm, dict):
-        return dm.get("polarity", "Yang")
-    if profile.get("polarity"):
-        return profile.get("polarity")
-    return DAY_MASTER_OPTIONS.get(dm, {}).get("polarity", "Yang")
-
-# ==================== PAGE HEADER ====================
 st.title("⚙️ Settings 设置")
-st.caption("Configure your BaZi profile, preferences, and manage data | 配置八字档案、偏好设置和数据管理")
 
-# Initialize birthday session state
-if 'saved_birth_date' not in st.session_state:
-    # Try to get from saved profile
-    profile = st.session_state.profile
-    if profile.get('birth_date'):
-        try:
-            st.session_state.saved_birth_date = date.fromisoformat(profile['birth_date'])
-        except:
-            st.session_state.saved_birth_date = date(1985, 1, 1)
-    else:
-        st.session_state.saved_birth_date = date(1985, 1, 1)
+tab1, tab2, tab3 = st.tabs(["🧮 BaZi Calculator 八字计算器", "👤 Profile 个人档案", "🌐 Preferences 偏好设置"])
 
-if 'saved_birth_hour' not in st.session_state:
-    profile = st.session_state.profile
-    st.session_state.saved_birth_hour = profile.get('birth_hour', 12)
-
-# Two columns layout
-col1, col2 = st.columns([3, 2])
-
-with col1:
-    # ==================== BIRTHDAY CALCULATOR ====================
-    st.header("🎂 Birthday Calculator 生日计算器")
-    st.caption("Enter birth date and time to auto-calculate your BaZi profile")
-    st.caption("输入出生日期和时间，自动计算八字档案")
+# ============ TAB 1: BAZI CALCULATOR ============
+with tab1:
+    st.markdown("### 🎂 Birthday Calculator 生日计算器")
+    st.markdown("Enter your birth details to calculate your Four Pillars (四柱八字)")
     
-    calc_col1, calc_col2 = st.columns(2)
+    col1, col2 = st.columns(2)
     
-    with calc_col1:
+    with col1:
+        st.markdown("#### 📅 Birth Date 出生日期")
         birth_date = st.date_input(
-            "Birth Date 出生日期",
-            value=st.session_state.saved_birth_date,
+            "Select your birth date",
+            value=date(1985, 1, 1),
             min_value=date(1900, 1, 1),
             max_value=date.today(),
-            key="birth_date_input"
+            help="Use the SOLAR calendar (阳历), not lunar calendar"
         )
-    
-    with calc_col2:
-        # Hour selection with Chinese hour names
-        hour_options = list(range(0, 24))
-        hour_labels = {h: f"{h:02d}:00 - {get_hour_branch_name(h)}" for h in hour_options}
         
-        birth_hour = st.selectbox(
-            "Birth Hour 出生时辰",
-            options=hour_options,
-            format_func=lambda h: hour_labels[h],
-            index=st.session_state.saved_birth_hour,
-            key="birth_hour_input"
+        st.info("💡 **Important:** BaZi uses the **Solar Calendar (阳历)**, NOT the Lunar Calendar (农历)!")
+    
+    with col2:
+        st.markdown("#### ⏰ Birth Time 出生时间")
+        
+        # TEXT INPUT for time (Phase 3 enhancement!)
+        time_input = st.text_input(
+            "Enter exact birth time (HH:MM) 输入出生时间",
+            value="12:00",
+            placeholder="e.g., 09:30, 14:45, 23:15",
+            help="24-hour format. Example: 09:30 for 9:30 AM, 14:45 for 2:45 PM"
         )
-    
-    if st.button("🔮 Calculate BaZi 计算八字", use_container_width=True, type="secondary"):
-        try:
-            # Save the birthday to session state
-            st.session_state.saved_birth_date = birth_date
-            st.session_state.saved_birth_hour = birth_hour
+        
+        parsed_time = parse_time_input(time_input)
+        
+        if parsed_time:
+            hour, minute = parsed_time
+            branch_idx = get_hour_branch(hour, minute)
+            chinese_hour = BRANCHES[branch_idx]
+            animal = BRANCH_ANIMALS[chinese_hour]
             
-            # Calculate BaZi
-            birth_datetime = datetime.combine(birth_date, datetime.min.time())
-            result = calculate_full_profile(birth_datetime, birth_hour)
+            st.success(f"✅ **{chinese_hour}时** ({animal})")
             
-            # Store in session state
-            st.session_state.calculated_bazi = result
-            
-            st.success("✅ BaZi calculated successfully! 八字计算成功！")
-        except Exception as e:
-            st.error(f"Calculation error: {e}")
-    
-    # Show calculated result if available
-    if 'calculated_bazi' in st.session_state and st.session_state.calculated_bazi:
-        result = st.session_state.calculated_bazi
-        bazi = result['bazi']
-        analysis = result['analysis']
-        
-        st.markdown("---")
-        st.subheader("📊 Calculated Result 计算结果")
-        
-        # Four Pillars Display
-        st.markdown("**Four Pillars 四柱:**")
-        pillar_cols = st.columns(4)
-        
-        with pillar_cols[0]:
-            st.markdown(f"""
-            <div style="text-align:center; background:#16213e; padding:10px; border-radius:8px; border:1px solid #2a3f5f;">
-                <div style="color:#888; font-size:0.8rem;">Year 年柱</div>
-                <div style="color:#d4af37; font-size:1.5rem; font-weight:bold;">{bazi['year_pillar']['display']}</div>
-                <div style="color:#aaa; font-size:0.7rem;">{bazi['animal_sign']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with pillar_cols[1]:
-            st.markdown(f"""
-            <div style="text-align:center; background:#16213e; padding:10px; border-radius:8px; border:1px solid #2a3f5f;">
-                <div style="color:#888; font-size:0.8rem;">Month 月柱</div>
-                <div style="color:#d4af37; font-size:1.5rem; font-weight:bold;">{bazi['month_pillar']['display']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with pillar_cols[2]:
-            dm = bazi['day_master']
-            elem_color = ELEMENT_COLORS.get(dm['element'], '#C0C0C0')
-            st.markdown(f"""
-            <div style="text-align:center; background:#1e3a5f; padding:10px; border-radius:8px; border:2px solid #d4af37;">
-                <div style="color:#d4af37; font-size:0.8rem;">Day 日柱 ⭐</div>
-                <div style="color:{elem_color}; font-size:1.5rem; font-weight:bold;">{bazi['day_pillar']['display']}</div>
-                <div style="color:#fff; font-size:0.7rem;">{dm['pinyin']} {dm['element']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with pillar_cols[3]:
-            st.markdown(f"""
-            <div style="text-align:center; background:#16213e; padding:10px; border-radius:8px; border:1px solid #2a3f5f;">
-                <div style="color:#888; font-size:0.8rem;">Hour 时柱</div>
-                <div style="color:#d4af37; font-size:1.5rem; font-weight:bold;">{bazi['hour_pillar']['display']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            # Show the time range for this 时辰
+            hour_ranges = [
+                "23:00-00:59", "01:00-02:59", "03:00-04:59", "05:00-06:59",
+                "07:00-08:59", "09:00-10:59", "11:00-12:59", "13:00-14:59",
+                "15:00-16:59", "17:00-18:59", "19:00-20:59", "21:00-22:59"
+            ]
+            st.caption(f"时辰 range: {hour_ranges[branch_idx]}")
+        else:
+            st.error("❌ Invalid time format. Please use HH:MM (e.g., 14:30)")
         
         st.markdown("")
-        
-        # Analysis summary
-        st.markdown(f"""
-        **Day Master 日主:** {bazi['day_master']['chinese']} {bazi['day_master']['pinyin']} ({bazi['day_master']['element']} {ELEMENT_CHINESE.get(bazi['day_master']['element'], '')} - {bazi['day_master']['polarity']})
-        
-        **Strength 强弱:** {analysis['strength']}
-        
-        **Useful Gods 用神:** {', '.join([f"{ELEMENT_EMOJI.get(e, '')} {e} {ELEMENT_CHINESE.get(e, '')}" for e in analysis['useful_gods']])}
-        
-        **Unfavorable 忌神:** {', '.join([f"{ELEMENT_EMOJI.get(e, '')} {e} {ELEMENT_CHINESE.get(e, '')}" for e in analysis['unfavorable']])}
-        
-        **Suggested Profile 建议性格:** {result['profile_suggestion']['emoji']} {result['profile_suggestion']['profile']}
-        """)
-        
-        # Apply to profile button
-        if st.button("📥 Apply to Profile 应用到档案", use_container_width=True, type="primary"):
-            new_profile = result['settings_profile']
-            # Add birth info for persistence
-            new_profile['birth_date'] = st.session_state.saved_birth_date.isoformat()
-            new_profile['birth_hour'] = st.session_state.saved_birth_hour
-            save_profile(new_profile)
-            st.session_state.profile = new_profile
-            st.session_state.calculated_bazi = None  # Clear calculated result
-            st.success("✅ Profile updated from BaZi calculation! 档案已从八字计算更新！")
-            st.rerun()
+        st.markdown("**💡 Tip for boundary times:**")
+        st.caption("If born near hour boundaries (e.g., 00:58, 02:59), the exact minute matters for accuracy!")
     
-    st.markdown("---")
+    # Calculate button
     st.markdown("---")
     
-    # ==================== BAZI PROFILE SECTION ====================
-    st.header("👤 Analysis Target Profile 分析目标档案")
-    st.caption("Default: Your BaZi profile. Change to analyze charts for clients, family, or friends.")
-    st.caption("默认：您的八字档案。可更改为客户、家人或朋友的资料进行分析。")
-    
-    # Always reload profile from session state to get latest
-    profile = st.session_state.profile
-    
-    st.markdown("---")
-    
-    # Day Master Selection
-    st.subheader("Day Master 日主")
-    
-    dm_options = list(DAY_MASTER_OPTIONS.keys())
-    current_dm = get_profile_value(profile, 'day_master', 'Geng')
-    
-    # Use index based on profile, not widget state
-    try:
-        current_dm_index = dm_options.index(current_dm)
-    except ValueError:
-        current_dm_index = 6  # Default to Geng
-    
-    # Clear widget key if profile was just updated
-    dm_key = f"dm_select_{current_dm}"  # Key includes current value to force refresh
-    
-    selected_dm = st.selectbox(
-        "Select Day Master 选择日主",
-        options=dm_options,
-        format_func=lambda x: f"{x} {DAY_MASTER_OPTIONS[x]['chinese']} - {DAY_MASTER_OPTIONS[x]['element']} {ELEMENT_CHINESE.get(DAY_MASTER_OPTIONS[x]['element'], '')} ({DAY_MASTER_OPTIONS[x]['polarity']})",
-        index=current_dm_index,
-        key=dm_key
-    )
-    
-    dm_info = DAY_MASTER_OPTIONS[selected_dm]
-    
-    # Element and Polarity display
-    col_elem, col_pol = st.columns(2)
-    with col_elem:
-        elem = dm_info['element']
-        st.info(f"**Element 五行:** {ELEMENT_EMOJI.get(elem, '')} {elem} {ELEMENT_CHINESE.get(elem, '')}")
-    with col_pol:
-        pol = dm_info['polarity']
-        pol_zh = "阳" if pol == "Yang" else "阴"
-        st.info(f"**Polarity 阴阳:** {'☀️' if pol == 'Yang' else '🌙'} {pol} {pol_zh}")
-    
-    st.markdown("---")
-    
-    # Strength Assessment
-    st.subheader("Strength Assessment 日主强弱")
-    strength_options = ["Weak 弱", "Strong 强", "Extremely Weak 极弱", "Extremely Strong 极强", "Balanced 中和"]
-    strength_values = ["Weak", "Strong", "Extremely Weak", "Extremely Strong", "Balanced"]
-    current_strength = profile.get('strength', 'Weak')
-    current_strength_index = 0
-    for i, v in enumerate(strength_values):
-        if v == current_strength:
-            current_strength_index = i
-            break
-    
-    strength_key = f"strength_{current_strength}"  # Dynamic key
-    selected_strength_display = st.radio(
-        "How strong is your Day Master? 日主强度如何？",
-        strength_options,
-        index=current_strength_index,
-        horizontal=True,
-        key=strength_key
-    )
-    selected_strength = strength_values[strength_options.index(selected_strength_display)]
-    
-    st.markdown("---")
-    
-    # Useful Gods
-    st.subheader("Useful Gods 用神")
-    st.caption("Select elements that support your chart 选择对您命盘有利的五行")
-    
-    current_useful = profile.get('useful_gods', ['Earth', 'Metal'])
-    if isinstance(current_useful, dict):
-        current_useful = [current_useful.get('primary', 'Earth'), current_useful.get('secondary', 'Metal')]
-    elements = ["Wood", "Fire", "Earth", "Metal", "Water"]
-    useful_cols = st.columns(5)
-    useful_selected = []
-    
-    # Create unique key suffix based on current useful gods
-    useful_key_suffix = "_".join(sorted(current_useful)) if current_useful else "none"
-    
-    for i, elem in enumerate(elements):
-        with useful_cols[i]:
-            if st.checkbox(
-                f"{ELEMENT_EMOJI.get(elem, '')} {elem} {ELEMENT_CHINESE.get(elem, '')}",
-                value=elem in current_useful,
-                key=f"useful_{elem}_{useful_key_suffix}"
-            ):
-                useful_selected.append(elem)
-    
-    st.markdown("---")
-    
-    # Unfavorable Elements
-    st.subheader("Unfavorable Elements 忌神")
-    st.caption("Select elements that weaken your chart 选择对您命盘不利的五行")
-    
-    current_unfav = profile.get('unfavorable', ['Fire'])
-    if isinstance(current_unfav, dict):
-        current_unfav = [current_unfav.get('primary', 'Fire')]
-    
-    # Create unique key suffix
-    unfav_key_suffix = "_".join(sorted(current_unfav)) if current_unfav else "none"
-    unfav_cols = st.columns(5)
-    unfav_selected = []
-    
-    for i, elem in enumerate(elements):
-        with unfav_cols[i]:
-            if st.checkbox(
-                f"{ELEMENT_EMOJI.get(elem, '')} {elem} {ELEMENT_CHINESE.get(elem, '')}",
-                value=elem in current_unfav,
-                key=f"unfav_{elem}_{unfav_key_suffix}"
-            ):
-                unfav_selected.append(elem)
-    
-    st.markdown("---")
-    
-    # Ten God Profile
-    st.subheader("Ten God Profile 十神性格")
-    
-    profile_options = list(TEN_GOD_PROFILE_OPTIONS.keys())
-    current_profile_name = profile.get('profile', 'Pioneer (Indirect Wealth)')
-    try:
-        current_profile_index = profile_options.index(current_profile_name)
-    except ValueError:
-        current_profile_index = 5
-    
-    profile_key = f"profile_select_{current_profile_name.replace(' ', '_')[:10]}"
-    selected_profile = st.selectbox(
-        "Select your dominant Ten God profile 选择主导十神性格",
-        options=profile_options,
-        format_func=lambda x: f"{TEN_GOD_PROFILE_OPTIONS[x]['emoji']} {x}",
-        index=current_profile_index,
-        key=profile_key
-    )
-    
-    profile_info = TEN_GOD_PROFILE_OPTIONS[selected_profile]
-    st.caption(f"**Traits 特征:** {', '.join(profile_info.get('traits', []))}")
-    
-    st.markdown("---")
-    
-    # Special Structures
-    st.subheader("Special Structures 特殊格局")
-    
-    current_structs = profile.get('special_structures', {})
-    struct_key_suffix = f"{current_structs.get('wealth_vault', False)}_{current_structs.get('nobleman', False)}"
-    struct_cols = st.columns(3)
-    
-    with struct_cols[0]:
-        wealth_vault = st.checkbox("💰 Wealth Vault 财库", value=current_structs.get('wealth_vault', True), key=f"struct_wealth_{struct_key_suffix}")
-    with struct_cols[1]:
-        nobleman = st.checkbox("👑 Nobleman 贵人", value=current_structs.get('nobleman', False), key=f"struct_noble_{struct_key_suffix}")
-    with struct_cols[2]:
-        horse = st.checkbox("🐴 Traveling Horse 驿马", value=current_structs.get('traveling_horse', False), key=f"struct_horse_{struct_key_suffix}")
-    
-    st.markdown("")
-    st.markdown("")
-    
-    # Save Button
-    if st.button("💾 Save Profile 保存档案", use_container_width=True, type="primary"):
-        new_profile = {
-            "day_master": selected_dm,
-            "chinese": dm_info['chinese'],
-            "element": dm_info['element'],
-            "polarity": dm_info['polarity'],
-            "strength": selected_strength,
-            "useful_gods": useful_selected if useful_selected else ['Earth', 'Metal'],
-            "unfavorable": unfav_selected if unfav_selected else ['Fire'],
-            "profile": selected_profile,
-            "profile_emoji": profile_info['emoji'],
-            "special_structures": {
-                "wealth_vault": wealth_vault,
-                "nobleman": nobleman,
-                "traveling_horse": horse,
-                "other": []
-            }
-        }
-        save_profile(new_profile)
-        st.session_state.profile = new_profile
-        st.success("✅ Profile saved successfully! 档案保存成功！")
-        st.rerun()
+    if st.button("🔮 Calculate BaZi 计算八字", type="primary", use_container_width=True):
+        if parsed_time:
+            hour, minute = parsed_time
+            
+            with st.spinner("Calculating your Four Pillars... 正在计算四柱..."):
+                bazi = calculate_full_bazi(
+                    birth_date.year,
+                    birth_date.month,
+                    birth_date.day,
+                    hour,
+                    minute
+                )
+            
+            st.success("✅ Calculation Complete! 计算完成!")
+            
+            # Display Four Pillars
+            st.markdown("### 📊 Your Four Pillars 四柱八字")
+            
+            # Create visual display
+            pillar_cols = st.columns(4)
+            pillar_names = [
+                ("Hour 时柱", bazi["hour"]),
+                ("Day 日柱", bazi["day"]),
+                ("Month 月柱", bazi["month"]),
+                ("Year 年柱", bazi["year"])
+            ]
+            
+            for col, (name, pillar) in zip(pillar_cols, pillar_names):
+                with col:
+                    stem_elem, stem_pol = STEM_ELEMENTS[pillar["stem"]]
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+                                padding: 15px; border-radius: 10px; text-align: center;
+                                border: 1px solid #d4af37;">
+                        <p style="color: #d4af37; margin-bottom: 5px; font-size: 0.9em;">{name}</p>
+                        <p style="font-size: 1.8em; margin: 5px 0;">{pillar['stem'].split()[0]}</p>
+                        <p style="font-size: 1.8em; margin: 5px 0;">{pillar['branch'].split()[0]}</p>
+                        <p style="color: #888; font-size: 0.8em; margin-top: 10px;">{stem_elem}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if "animal" in pillar:
+                        st.caption(f"{pillar['animal']}")
+            
+            # Day Master Analysis
+            st.markdown("---")
+            st.markdown("### 🌟 Day Master Analysis 日主分析")
+            
+            analysis = bazi["day_master_analysis"]
+            
+            analysis_col1, analysis_col2 = st.columns(2)
+            
+            with analysis_col1:
+                st.markdown(f"""
+                **日主 Day Master:** {analysis['day_master']}  
+                **五行 Element:** {analysis['element']}  
+                **阴阳 Polarity:** {analysis['polarity']}  
+                **强弱 Strength:** {analysis['strength']}
+                """)
+            
+            with analysis_col2:
+                st.markdown(f"""
+                **用神 Useful Gods:** {', '.join(analysis['useful_gods'])}  
+                **忌神 Unfavorable:** {', '.join(analysis['unfavorable'])}  
+                **性格 Profile:** {analysis['profile']}
+                """)
+            
+            # Save to profile button
+            st.markdown("---")
+            if st.button("💾 Save as My Profile 保存为我的档案", use_container_width=True):
+                st.session_state.user_profile = {
+                    "day_master": analysis['day_master'],
+                    "element": analysis['element'],
+                    "polarity": analysis['polarity'],
+                    "strength": analysis['strength'],
+                    "useful_gods": analysis['useful_gods'],
+                    "unfavorable": analysis['unfavorable'],
+                    "profile": analysis['profile'],
+                    "birth_date": birth_date.isoformat(),
+                    "birth_time": f"{hour:02d}:{minute:02d}",
+                    "four_pillars": bazi
+                }
+                st.success("✅ Profile saved! 档案已保存!")
+                st.balloons()
+        else:
+            st.error("❌ Please enter a valid birth time in HH:MM format")
 
-with col2:
-    # ==================== PROFILE PREVIEW ====================
-    st.header("👁️ Profile Preview 档案预览")
+# ============ TAB 2: PROFILE ============
+with tab2:
+    st.markdown("### 👤 Your Current Profile 您的当前档案")
     
-    # Check if we have a calculated BaZi to preview, otherwise show saved profile
-    if 'calculated_bazi' in st.session_state and st.session_state.calculated_bazi:
-        # Show calculated result
-        calc = st.session_state.calculated_bazi
-        bazi = calc['bazi']
-        analysis = calc['analysis']
+    if 'user_profile' in st.session_state and st.session_state.user_profile:
+        profile = st.session_state.user_profile
         
-        dm_name = bazi['day_master']['pinyin']
-        chinese = bazi['day_master']['chinese']
-        element = bazi['day_master']['element']
-        polarity = bazi['day_master']['polarity']
-        strength = analysis['strength']
-        useful = analysis['useful_gods']
-        unfav = analysis['unfavorable']
-        prof = calc['profile_suggestion']['profile']
-        prof_emoji = calc['profile_suggestion']['emoji']
-        structs = {}  # Calculated doesn't have special structures yet
-        
-        st.caption("📊 Showing calculated result (not yet saved)")
-    else:
-        # Show saved profile
-        current = st.session_state.profile
-        
-        dm_name = get_profile_value(current, 'day_master', 'Geng')
-        chinese = get_profile_chinese(current)
-        element = get_profile_element(current)
-        polarity = get_profile_polarity(current)
-        strength = current.get('strength', 'Weak')
-        useful = current.get('useful_gods', ['Earth', 'Metal'])
-        unfav = current.get('unfavorable', ['Fire'])
-        prof = current.get('profile', 'Pioneer (Indirect Wealth)')
-        prof_emoji = current.get('profile_emoji', '🎯')
-        structs = current.get('special_structures', {})
-        
-        st.caption("💾 Showing saved profile")
-    
-    elem_color = ELEMENT_COLORS.get(element, '#C0C0C0')
-    
-    # Preview Card using Streamlit components
-    with st.container():
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #16213e 100%);
-                    border: 2px solid #d4af37; border-radius: 15px; padding: 25px; text-align: center;">
-            <div style="font-size: 5rem; color: #d4af37; margin-bottom: 10px;">{chinese}</div>
-            <div style="font-size: 1.5rem; color: {elem_color}; font-weight: 600;">{dm_name} {element} {ELEMENT_CHINESE.get(element, '')}</div>
-            <div style="color: #aaa; font-size: 1rem;">({polarity} {'阳' if polarity == 'Yang' else '阴'} · {strength})</div>
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+                    padding: 25px; border-radius: 15px; border: 2px solid #d4af37;">
+            <h3 style="color: #d4af37; text-align: center;">📜 BaZi Profile Card</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div>
+                    <p style="color: #d4af37;">日主 Day Master</p>
+                    <p style="font-size: 1.5em;">{profile.get('day_master', 'Not set')}</p>
+                </div>
+                <div>
+                    <p style="color: #d4af37;">五行 Element</p>
+                    <p style="font-size: 1.2em;">{profile.get('element', 'Not set')} • {profile.get('polarity', '')}</p>
+                </div>
+                <div>
+                    <p style="color: #d4af37;">强弱 Strength</p>
+                    <p style="font-size: 1.2em;">{profile.get('strength', 'Not set')}</p>
+                </div>
+                <div>
+                    <p style="color: #d4af37;">性格 Profile</p>
+                    <p style="font-size: 1.2em;">{profile.get('profile', 'Not set')}</p>
+                </div>
+            </div>
+            
+            <hr style="border-color: #d4af37; margin: 20px 0;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <p style="color: #4CAF50;">✅ 用神 Useful Gods</p>
+                    <p>{', '.join(profile.get('useful_gods', ['Not set']))}</p>
+                </div>
+                <div>
+                    <p style="color: #f44336;">❌ 忌神 Unfavorable</p>
+                    <p>{', '.join(profile.get('unfavorable', ['Not set']))}</p>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Show birth details if available
+        if 'birth_date' in profile:
+            st.markdown("---")
+            st.markdown(f"**Birth Date:** {profile.get('birth_date', 'N/A')}")
+            st.markdown(f"**Birth Time:** {profile.get('birth_time', 'N/A')}")
+    else:
+        st.info("No profile saved yet. Use the BaZi Calculator to create your profile!")
+
+# ============ TAB 3: PREFERENCES ============
+with tab3:
+    st.markdown("### 🌐 Language & Display 语言与显示")
     
-    st.markdown("")
+    language = st.selectbox(
+        "Language Mode 语言模式",
+        options=["mixed", "english", "chinese"],
+        index=0,
+        format_func=lambda x: {
+            "mixed": "🌏 Mixed (English + 中文)",
+            "english": "🇬🇧 English Only",
+            "chinese": "🇨🇳 中文 Only"
+        }[x]
+    )
     
-    # Profile details using st.write for reliability
-    st.markdown("**Profile 性格:**")
-    st.write(f"{prof_emoji} {prof}")
-    
-    st.markdown("**Useful Gods 用神:**")
-    useful_display = " ".join([f"{ELEMENT_EMOJI.get(e, '')} {e} {ELEMENT_CHINESE.get(e, '')}" for e in useful]) if useful else "None"
-    st.write(useful_display)
-    
-    st.markdown("**Unfavorable 忌神:**")
-    unfav_display = " ".join([f"{ELEMENT_EMOJI.get(e, '')} {e} {ELEMENT_CHINESE.get(e, '')}" for e in unfav]) if unfav else "None"
-    st.write(unfav_display)
-    
-    st.markdown("**Special Structures 特殊格局:**")
-    special_list = []
-    if structs.get('wealth_vault'):
-        special_list.append("💰 Wealth Vault 财库")
-    if structs.get('nobleman'):
-        special_list.append("👑 Nobleman 贵人")
-    if structs.get('traveling_horse'):
-        special_list.append("🐴 Traveling Horse 驿马")
-    st.write(", ".join(special_list) if special_list else "None")
-    
-    st.markdown("---")
-    
-    # ==================== DISPLAY SETTINGS ====================
-    st.header("🎨 Display 显示设置")
-    
-    lang_options = ["English", "中文", "Mixed 混合"]
-    current_lang = st.session_state.get('lang_mode', 'mixed')
-    lang_index = {"en": 0, "zh": 1, "mixed": 2}.get(current_lang, 2)
-    
-    selected_lang = st.radio("Language 语言", lang_options, index=lang_index, horizontal=True, key="lang_radio")
-    
-    lang_map = {"English": "en", "中文": "zh", "Mixed 混合": "mixed"}
-    new_lang = lang_map.get(selected_lang, "mixed")
-    if new_lang != current_lang:
-        st.session_state.lang_mode = new_lang
+    if st.button("Save Language Preference"):
+        st.session_state.language = language
+        st.success(f"✅ Language set to: {language}")
     
     st.markdown("---")
+    st.markdown("### 🗑️ Data Management 数据管理")
     
-    # ==================== DATABASE MANAGEMENT ====================
-    st.header("📊 Database 数据库")
+    col1, col2 = st.columns(2)
     
-    stats = get_statistics()
+    with col1:
+        if st.button("🗑️ Clear All Analyses", type="secondary"):
+            st.session_state.analyses = []
+            st.success("✅ All analyses cleared!")
     
-    stat_cols = st.columns(2)
-    with stat_cols[0]:
-        st.metric("Total Analyses 总分析", stats.get('total', 0))
-    with stat_cols[1]:
-        rate = stats.get('success_rate', 0)
-        st.metric("Success Rate 成功率", f"{rate:.0%}" if isinstance(rate, float) else "0%")
-    
-    st.markdown("")
-    
-    # Export button
-    records = get_all_records()
-    if records:
-        csv_data = export_to_csv_string()
-        st.download_button(
-            "📥 Export CSV 导出数据",
-            data=csv_data,
-            file_name="qmdj_analyses.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    
-    st.markdown("")
-    
-    # Clear database
-    with st.expander("⚠️ Danger Zone 危险区域"):
-        st.warning("This will delete all analysis history! 这将删除所有分析历史！")
-        if st.button("🗑️ Clear All Data 清除所有数据", use_container_width=True):
-            clear_database()
-            st.success("Database cleared! 数据库已清除！")
-            st.rerun()
-    
-    st.markdown("")
-    
-    # Reset to defaults
-    if st.button("🔄 Reset Profile to Defaults 重置为默认", use_container_width=True):
-        default = get_default_profile()
-        save_profile(default)
-        st.session_state.profile = default
-        st.success("Profile reset to defaults! 档案已重置！")
-        st.rerun()
+    with col2:
+        if st.button("🔄 Reset Profile", type="secondary"):
+            st.session_state.user_profile = {}
+            st.success("✅ Profile reset!")
+
+# Footer
+st.markdown("---")
+st.caption("⚙️ Qi Men Pro Settings | Phase 3 | v2.0")
