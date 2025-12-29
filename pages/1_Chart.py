@@ -1,10 +1,10 @@
 """
 Ming Qimen 明奇门 - Chart Generator
-Beginner-friendly with energy levels instead of technical terms
+Fixed: Singapore timezone (UTC+8)
 """
 
 import streamlit as st
-from datetime import datetime, date
+from datetime import datetime, timedelta, timezone
 import json
 
 st.set_page_config(
@@ -12,6 +12,13 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+
+# Singapore timezone (UTC+8)
+SGT = timezone(timedelta(hours=8))
+
+def get_singapore_time():
+    """Get current time in Singapore (UTC+8)"""
+    return datetime.now(SGT)
 
 # Load CSS
 try:
@@ -72,7 +79,6 @@ DEITIES = {
     "九天": {"english": "Heaven", "nature": "Favorable", "meaning": "Go big, expand"},
 }
 
-# Beginner-friendly energy levels
 ENERGY_LEVELS = {
     3: {"label": "🔥 High Energy", "advice": "Take Action!", "color": "green"},
     2: {"label": "✨ Good Energy", "advice": "Favorable", "color": "green"},
@@ -122,7 +128,6 @@ def calculate_ju_number(year, month, day, hour):
     return base if base > 0 else 9
 
 def calculate_energy(comp_element, palace_element):
-    """Calculate energy level (beginner-friendly version of strength)"""
     cycle = ["Wood", "Fire", "Earth", "Metal", "Water"]
     if comp_element not in cycle or palace_element not in cycle:
         return (0, ENERGY_LEVELS[0])
@@ -143,7 +148,6 @@ def calculate_energy(comp_element, palace_element):
         return (-3, ENERGY_LEVELS[-3])
 
 def get_nature_display(nature):
-    """Convert nature to emoji and color"""
     if "Very Favorable" in str(nature):
         return "🌟", "green", "Excellent!"
     elif "Favorable" in str(nature):
@@ -153,15 +157,12 @@ def get_nature_display(nature):
     return "😐", "orange", "Neutral"
 
 def generate_qmdj_chart(selected_date, hour, minute, palace_number):
-    """Generate QMDJ chart data"""
-    
     structure = determine_structure(selected_date.month)
     ju_number = calculate_ju_number(selected_date.year, selected_date.month, 
                                      selected_date.day, hour)
     chinese_hour = get_chinese_hour(hour, minute)
     palace = PALACES[palace_number]
     
-    # Calculate components
     seed = selected_date.year * 10000 + selected_date.month * 100 + selected_date.day + hour + palace_number
     
     stem_idx = seed % 10
@@ -192,6 +193,7 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
             "chinese_hour_animal": chinese_hour[1],
             "structure": structure,
             "ju_number": ju_number,
+            "timezone": "SGT (UTC+8)"
         },
         "palace": {
             "number": palace_number,
@@ -229,7 +231,6 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
         }
     }
     
-    # Calculate overall guidance
     natures = [star["nature"], door["nature"], deity["nature"]]
     favorable = sum(1 for n in natures if "Favorable" in n)
     challenging = sum(1 for n in natures if "Challenging" in n)
@@ -263,14 +264,14 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
 st.markdown("""
 <div style="text-align: center;">
     <h1 style="color: #d4af37;">📈 Your Reading 您的指引</h1>
-    <p style="color: #888;">Ming Qimen 明奇门</p>
+    <p style="color: #888;">Ming Qimen 明奇门 | Singapore Time (SGT)</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Get time from shared state or use current
-current_time = datetime.now()
-default_date = st.session_state.get('shared_date', current_time.date())
-default_time = st.session_state.get('shared_time', current_time.strftime("%H:%M"))
+# Get Singapore time and shared state
+sg_now = get_singapore_time()
+default_date = st.session_state.get('shared_date', sg_now.date())
+default_time = st.session_state.get('shared_time', sg_now.strftime("%H:%M"))
 default_palace = st.session_state.get('selected_palace', 5)
 
 # Input Section
@@ -305,25 +306,22 @@ if st.button("🔮 Get Guidance 获取指引", type="primary", use_container_wid
         st.session_state.current_chart = chart
         st.success("✅ Your guidance is ready!")
 
-# Display Chart Results
+# Display Results
 if 'current_chart' in st.session_state and st.session_state.current_chart:
     chart = st.session_state.current_chart
     
     st.markdown("---")
     
-    # Topic Header
     palace = chart['palace']
     st.markdown(f"### {palace['icon']} Your {palace['topic']} Reading")
     st.markdown(f"**Palace:** #{palace['number']} {palace['name']} | **Element:** {palace['element']}")
     
-    # Time info
     meta_cols = st.columns(4)
     meta_cols[0].metric("📅 Date", chart['metadata']['date'])
-    meta_cols[1].metric("⏰ Time", chart['metadata']['time'])
+    meta_cols[1].metric("⏰ Time (SGT)", chart['metadata']['time'])
     meta_cols[2].metric("🕐 时辰", chart['metadata']['chinese_hour'])
     meta_cols[3].metric("Structure", f"#{chart['metadata']['ju_number']}")
     
-    # MAIN GUIDANCE - Big and clear!
     st.markdown("---")
     guidance = chart['guidance']
     
@@ -339,58 +337,44 @@ if 'current_chart' in st.session_state and st.session_state.current_chart:
     
     st.markdown(f"### 💡 Advice: {guidance['advice']}")
     
-    # Components - Beginner friendly
     st.markdown("---")
     st.markdown("### 📋 What the Signs Say 详细信息")
     
     comp_cols = st.columns(3)
     
-    # Star
     with comp_cols[0]:
         star = chart['components']['star']
         emoji, color, label = get_nature_display(star['nature'])
-        
         st.markdown(f"**Star 九星** {emoji}")
         st.markdown(f"### {star['chinese']} {star['english']}")
-        
         if "Favorable" in star['nature']:
             st.success(f"{star['meaning']}")
         elif "Challenging" in star['nature']:
             st.error(f"{star['meaning']}")
         else:
             st.warning(f"{star['meaning']}")
-        
-        # Energy level
         energy_score, energy_info = star['energy']
         st.caption(f"{energy_info['label']} - {energy_info['advice']}")
     
-    # Door
     with comp_cols[1]:
         door = chart['components']['door']
         emoji, color, label = get_nature_display(door['nature'])
-        
         st.markdown(f"**Door 八门** {emoji}")
         st.markdown(f"### {door['chinese']} {door['english']}")
-        
         if "Favorable" in door['nature']:
             st.success(f"{door['meaning']}")
         elif "Challenging" in door['nature']:
             st.error(f"{door['meaning']}")
         else:
             st.warning(f"{door['meaning']}")
-        
-        # Energy level
         energy_score, energy_info = door['energy']
         st.caption(f"{energy_info['label']} - {energy_info['advice']}")
     
-    # Deity
     with comp_cols[2]:
         deity = chart['components']['deity']
         emoji, color, label = get_nature_display(deity['nature'])
-        
         st.markdown(f"**Spirit 八神** {emoji}")
         st.markdown(f"### {deity['chinese']} {deity['english']}")
-        
         if "Favorable" in deity['nature']:
             st.success(f"{deity['meaning']}")
         elif "Challenging" in deity['nature']:
@@ -398,15 +382,12 @@ if 'current_chart' in st.session_state and st.session_state.current_chart:
         else:
             st.warning(f"{deity['meaning']}")
     
-    # Stems (simplified)
-    st.markdown("---")
     with st.expander("🔍 More Details 更多详情", expanded=False):
         stem_cols = st.columns(2)
         with stem_cols[0]:
             st.markdown(f"**Heaven Stem 天干:** {chart['components']['heaven_stem']}")
         with stem_cols[1]:
             st.markdown(f"**Earth Stem 地干:** {chart['components']['earth_stem']}")
-        
         st.json(chart)
     
     # Save to history
@@ -425,9 +406,8 @@ if 'current_chart' in st.session_state and st.session_state.current_chart:
             "palace": chart['palace']['number'],
             "topic": chart['palace']['topic'],
             "verdict": guidance['verdict'],
-            "generated_at": datetime.now().isoformat()
+            "generated_at": get_singapore_time().isoformat()
         })
 
-# Footer
 st.markdown("---")
-st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People")
+st.caption("🌟 Ming Qimen 明奇门 | Clarity for the People | Singapore Time (UTC+8)")
