@@ -1,6 +1,6 @@
 """
 Qi Men Pro - Chart Generator Page
-Phase 3: Enhanced with precise time input and improved calculations
+Phase 3: Fixed HTML rendering - using native Streamlit components
 """
 
 import streamlit as st
@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load custom CSS
+# Load CSS
 try:
     with open("assets/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -23,15 +23,15 @@ except:
 # ============ CONSTANTS ============
 
 PALACES = {
-    1: {"name": "坎 Kan", "direction": "N", "element": "Water", "color": "#1E90FF"},
-    2: {"name": "坤 Kun", "direction": "SW", "element": "Earth", "color": "#DAA520"},
-    3: {"name": "震 Zhen", "direction": "E", "element": "Wood", "color": "#228B22"},
-    4: {"name": "巽 Xun", "direction": "SE", "element": "Wood", "color": "#228B22"},
-    5: {"name": "中 Center", "direction": "C", "element": "Earth", "color": "#DAA520"},
-    6: {"name": "乾 Qian", "direction": "NW", "element": "Metal", "color": "#C0C0C0"},
-    7: {"name": "兑 Dui", "direction": "W", "element": "Metal", "color": "#C0C0C0"},
-    8: {"name": "艮 Gen", "direction": "NE", "element": "Earth", "color": "#DAA520"},
-    9: {"name": "离 Li", "direction": "S", "element": "Fire", "color": "#DC143C"},
+    1: {"name": "坎 Kan", "direction": "N", "element": "Water", "icon": "💼"},
+    2: {"name": "坤 Kun", "direction": "SW", "element": "Earth", "icon": "💕"},
+    3: {"name": "震 Zhen", "direction": "E", "element": "Wood", "icon": "💪"},
+    4: {"name": "巽 Xun", "direction": "SE", "element": "Wood", "icon": "💰"},
+    5: {"name": "中 Center", "direction": "C", "element": "Earth", "icon": "🎯"},
+    6: {"name": "乾 Qian", "direction": "NW", "element": "Metal", "icon": "🤝"},
+    7: {"name": "兑 Dui", "direction": "W", "element": "Metal", "icon": "👶"},
+    8: {"name": "艮 Gen", "direction": "NE", "element": "Earth", "icon": "📚"},
+    9: {"name": "离 Li", "direction": "S", "element": "Fire", "icon": "🌟"},
 }
 
 STEMS = ["甲 Jia", "乙 Yi", "丙 Bing", "丁 Ding", "戊 Wu", 
@@ -75,26 +75,20 @@ DEITIES = {
     "九天": {"english": "Nine Heaven", "nature": "Auspicious"},
 }
 
-# Formations from Joey Yap Book #64
 FORMATIONS = {
-    "伏吟": {"english": "Fu Yin (Hidden Voice)", "nature": "Inauspicious", "meaning": "Stagnation, delay, things hidden"},
-    "反吟": {"english": "Fan Yin (Returning Voice)", "nature": "Inauspicious", "meaning": "Reversal, going back, change of mind"},
-    "天遁": {"english": "Tian Dun (Heaven Escape)", "nature": "Very Auspicious", "meaning": "Divine help, prayers answered"},
-    "地遁": {"english": "Di Dun (Earth Escape)", "nature": "Very Auspicious", "meaning": "Hidden support, secret assistance"},
-    "人遁": {"english": "Ren Dun (Human Escape)", "nature": "Auspicious", "meaning": "Help from people, networking success"},
-    "神遁": {"english": "Shen Dun (Spirit Escape)", "nature": "Very Auspicious", "meaning": "Spiritual protection, intuition guides"},
-    "鬼遁": {"english": "Gui Dun (Ghost Escape)", "nature": "Inauspicious", "meaning": "Deception, hidden enemies"},
-    "龙遁": {"english": "Long Dun (Dragon Escape)", "nature": "Auspicious", "meaning": "Power, authority, career success"},
-    "虎遁": {"english": "Hu Dun (Tiger Escape)", "nature": "Neutral", "meaning": "Courage needed, calculated risks"},
-    "风遁": {"english": "Feng Dun (Wind Escape)", "nature": "Auspicious", "meaning": "Quick success, swift changes"},
-    "云遁": {"english": "Yun Dun (Cloud Escape)", "nature": "Neutral", "meaning": "Uncertainty, wait and see"},
+    "伏吟": {"english": "Fu Yin (Hidden Voice)", "nature": "Inauspicious", "meaning": "Stagnation, delay"},
+    "反吟": {"english": "Fan Yin (Returning Voice)", "nature": "Inauspicious", "meaning": "Reversal, change"},
+    "天遁": {"english": "Tian Dun (Heaven Escape)", "nature": "Very Auspicious", "meaning": "Divine help"},
+    "地遁": {"english": "Di Dun (Earth Escape)", "nature": "Very Auspicious", "meaning": "Hidden support"},
+    "人遁": {"english": "Ren Dun (Human Escape)", "nature": "Auspicious", "meaning": "Help from people"},
+    "龙遁": {"english": "Long Dun (Dragon Escape)", "nature": "Auspicious", "meaning": "Power, authority"},
+    "虎遁": {"english": "Hu Dun (Tiger Escape)", "nature": "Neutral", "meaning": "Courage needed"},
+    "风遁": {"english": "Feng Dun (Wind Escape)", "nature": "Auspicious", "meaning": "Quick success"},
 }
-
 
 # ============ HELPER FUNCTIONS ============
 
 def parse_time_input(time_str):
-    """Parse time string in HH:MM format"""
     try:
         time_str = time_str.strip().replace("：", ":").replace(".", ":")
         if ":" in time_str:
@@ -104,82 +98,79 @@ def parse_time_input(time_str):
         else:
             hour = int(time_str)
             minute = 0
-        
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             return (hour, minute)
         return None
     except:
         return None
 
-
 def get_chinese_hour(hour, minute=0):
-    """Get Chinese double-hour (时辰) for given time"""
     total_minutes = hour * 60 + minute
-    
     hour_data = [
-        ("子 Zi", 0, "Rat 🐀", "23:00-00:59"),
-        ("丑 Chou", 1, "Ox 🐂", "01:00-02:59"),
-        ("寅 Yin", 2, "Tiger 🐅", "03:00-04:59"),
-        ("卯 Mao", 3, "Rabbit 🐇", "05:00-06:59"),
-        ("辰 Chen", 4, "Dragon 🐉", "07:00-08:59"),
-        ("巳 Si", 5, "Snake 🐍", "09:00-10:59"),
-        ("午 Wu", 6, "Horse 🐴", "11:00-12:59"),
-        ("未 Wei", 7, "Goat 🐐", "13:00-14:59"),
-        ("申 Shen", 8, "Monkey 🐒", "15:00-16:59"),
-        ("酉 You", 9, "Rooster 🐓", "17:00-18:59"),
-        ("戌 Xu", 10, "Dog 🐕", "19:00-20:59"),
-        ("亥 Hai", 11, "Pig 🐖", "21:00-22:59"),
+        ("子 Zi", "Rat 🐀"), ("丑 Chou", "Ox 🐂"), ("寅 Yin", "Tiger 🐅"),
+        ("卯 Mao", "Rabbit 🐇"), ("辰 Chen", "Dragon 🐉"), ("巳 Si", "Snake 🐍"),
+        ("午 Wu", "Horse 🐴"), ("未 Wei", "Goat 🐐"), ("申 Shen", "Monkey 🐒"),
+        ("酉 You", "Rooster 🐓"), ("戌 Xu", "Dog 🐕"), ("亥 Hai", "Pig 🐖"),
     ]
-    
     if total_minutes >= 23 * 60 or total_minutes < 1 * 60:
         return hour_data[0]
-    
     idx = (hour + 1) // 2
-    if idx >= 12:
-        idx = 0
-    
-    return hour_data[idx]
-
+    return hour_data[idx] if idx < 12 else hour_data[0]
 
 def determine_structure(month):
-    """Determine Yin Dun or Yang Dun based on month"""
-    # Yang Dun: Winter Solstice to Summer Solstice (roughly months 12, 1-5)
-    # Yin Dun: Summer Solstice to Winter Solstice (roughly months 6-11)
     if month in [12, 1, 2, 3, 4, 5]:
         return "Yang Dun 阳遁"
-    else:
-        return "Yin Dun 阴遁"
-
+    return "Yin Dun 阴遁"
 
 def calculate_ju_number(year, month, day, hour):
-    """Calculate Ju number (1-9) - simplified"""
-    # This is a simplified calculation
-    # Real QMDJ uses solar terms and specific rules
     base = (year + month + day + hour) % 9
     return base if base > 0 else 9
 
+def calculate_strength(comp_element, palace_element):
+    """Calculate element strength relative to palace"""
+    cycle = ["Wood", "Fire", "Earth", "Metal", "Water"]
+    if comp_element not in cycle or palace_element not in cycle:
+        return ("Unknown", 0)
+    
+    comp_idx = cycle.index(comp_element)
+    palace_idx = cycle.index(palace_element)
+    diff = (comp_idx - palace_idx) % 5
+    
+    if diff == 0:
+        return ("Timely", 3)
+    elif diff == 1:
+        return ("Prosperous", 2)
+    elif diff == 2:
+        return ("Resting", 0)
+    elif diff == 3:
+        return ("Confined", -2)
+    else:
+        return ("Dead", -3)
+
+def get_nature_color(nature):
+    if "Auspicious" in str(nature):
+        return "green"
+    elif "Inauspicious" in str(nature):
+        return "red"
+    return "orange"
 
 def generate_qmdj_chart(selected_date, hour, minute, palace_number):
-    """Generate QMDJ chart data - enhanced calculation"""
+    """Generate QMDJ chart data"""
     
-    # Calculate basic parameters
     structure = determine_structure(selected_date.month)
     ju_number = calculate_ju_number(selected_date.year, selected_date.month, 
                                      selected_date.day, hour)
     chinese_hour = get_chinese_hour(hour, minute)
-    
-    # Get palace info
     palace = PALACES[palace_number]
     
-    # Calculate components (simplified - real version uses kinqimen)
-    # Using deterministic calculation based on date/time/palace
+    # Calculate components (simplified)
     seed = selected_date.year * 10000 + selected_date.month * 100 + selected_date.day + hour + palace_number
     
     stem_idx = seed % 10
     earth_stem_idx = (seed + 3) % 10
-    star_idx = seed % 9
-    door_idx = seed % 8
-    deity_idx = seed % 9
+    star_idx = seed % len(STARS)
+    door_idx = seed % len(DOORS)
+    deity_idx = seed % len(DEITIES)
     
     star_keys = list(STARS.keys())
     door_keys = list(DOORS.keys())
@@ -193,66 +184,34 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
     door = DOORS[door_cn]
     deity = DEITIES[deity_cn]
     
-    # Calculate element strengths relative to palace element
     palace_element = palace["element"]
-    
-    def calculate_strength(component_element, palace_element):
-        """Calculate strength based on Five Element relationships"""
-        cycle = ["Wood", "Fire", "Earth", "Metal", "Water"]
-        comp_idx = cycle.index(component_element)
-        palace_idx = cycle.index(palace_element)
-        
-        diff = (comp_idx - palace_idx) % 5
-        
-        if diff == 0:
-            return ("Timely", 3)
-        elif diff == 1:
-            return ("Prosperous", 2)
-        elif diff == 2:
-            return ("Resting", 0)
-        elif diff == 3:
-            return ("Confined", -2)
-        else:
-            return ("Dead", -3)
     
     # Formation detection (simplified)
     formation = None
     formation_keys = list(FORMATIONS.keys())
-    if (seed % 7) == 0:  # Randomly assign formation for demo
+    if (seed % 7) == 0:
         formation_cn = formation_keys[seed % len(formation_keys)]
-        formation = {
-            "chinese": formation_cn,
-            **FORMATIONS[formation_cn]
-        }
+        formation = {"chinese": formation_cn, **FORMATIONS[formation_cn]}
     
-    # Build chart data
     chart = {
         "metadata": {
             "date": selected_date.isoformat(),
             "time": f"{hour:02d}:{minute:02d}",
             "chinese_hour": chinese_hour[0],
-            "chinese_hour_animal": chinese_hour[2],
+            "chinese_hour_animal": chinese_hour[1],
             "structure": structure,
             "ju_number": ju_number,
-            "method": "Chai Bu 拆补"
         },
         "palace": {
             "number": palace_number,
             "name": palace["name"],
             "direction": palace["direction"],
-            "element": palace["element"]
+            "element": palace_element,
+            "icon": palace["icon"]
         },
         "components": {
-            "heaven_stem": {
-                "chinese": STEMS[stem_idx].split()[0],
-                "english": STEMS[stem_idx].split()[1],
-                "full": STEMS[stem_idx]
-            },
-            "earth_stem": {
-                "chinese": STEMS[earth_stem_idx].split()[0],
-                "english": STEMS[earth_stem_idx].split()[1],
-                "full": STEMS[earth_stem_idx]
-            },
+            "heaven_stem": STEMS[stem_idx],
+            "earth_stem": STEMS[earth_stem_idx],
             "star": {
                 "chinese": star_cn,
                 "english": star["english"],
@@ -273,235 +232,200 @@ def generate_qmdj_chart(selected_date, hour, minute, palace_number):
                 "nature": deity["nature"]
             }
         },
-        "formation": formation,
-        "analysis": {
-            "overall_nature": "Calculating...",
-            "recommendation": ""
-        }
+        "formation": formation
     }
     
-    # Calculate overall nature
-    natures = [
-        chart["components"]["star"]["nature"],
-        chart["components"]["door"]["nature"],
-        chart["components"]["deity"]["nature"]
-    ]
+    # Calculate verdict
+    natures = [star["nature"], door["nature"], deity["nature"]]
+    auspicious = sum(1 for n in natures if "Auspicious" in n)
+    inauspicious = sum(1 for n in natures if "Inauspicious" in n)
     
-    auspicious_count = natures.count("Auspicious") + natures.count("Very Auspicious")
-    inauspicious_count = natures.count("Inauspicious")
-    
-    if auspicious_count >= 2:
-        chart["analysis"]["overall_nature"] = "Auspicious 吉"
-        chart["analysis"]["recommendation"] = "Favorable for action. Proceed with confidence."
-    elif inauspicious_count >= 2:
-        chart["analysis"]["overall_nature"] = "Inauspicious 凶"
-        chart["analysis"]["recommendation"] = "Caution advised. Consider postponing or alternative approach."
+    if auspicious >= 2:
+        chart["verdict"] = {"text": "Auspicious 吉", "type": "success", "advice": "Favorable for action. Proceed with confidence."}
+    elif inauspicious >= 2:
+        chart["verdict"] = {"text": "Inauspicious 凶", "type": "error", "advice": "Caution advised. Consider alternative timing."}
     else:
-        chart["analysis"]["overall_nature"] = "Neutral 平"
-        chart["analysis"]["recommendation"] = "Mixed signals. Proceed with awareness and flexibility."
-    
-    if formation:
-        chart["analysis"]["formation_impact"] = formation["meaning"]
+        chart["verdict"] = {"text": "Neutral 平", "type": "warning", "advice": "Mixed signals. Proceed with awareness."}
     
     return chart
-
-
-def get_nature_color(nature):
-    """Get color based on nature"""
-    if "Auspicious" in nature:
-        return "#4CAF50"
-    elif "Inauspicious" in nature:
-        return "#f44336"
-    else:
-        return "#FFA500"
-
 
 # ============ PAGE CONTENT ============
 
 st.title("📈 Chart Generator 奇门起盘")
 
 # Input Section
-st.markdown("### 📅 Select Date & Time 选择日期时间")
-
 col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
-    selected_date = st.date_input(
-        "Date 日期",
-        value=datetime.now().date(),
-        help="Select the date for your QMDJ chart"
-    )
+    selected_date = st.date_input("📅 Date 日期", value=datetime.now().date())
 
 with col2:
-    # TIME TEXT INPUT (Phase 3 enhancement!)
-    time_input = st.text_input(
-        "Time (HH:MM) 时间",
-        value=datetime.now().strftime("%H:%M"),
-        placeholder="e.g., 14:30",
-        help="Enter time in 24-hour format (HH:MM)"
-    )
-    
+    time_input = st.text_input("⏰ Time (HH:MM)", value=datetime.now().strftime("%H:%M"))
     parsed_time = parse_time_input(time_input)
-    
     if parsed_time:
         hour, minute = parsed_time
         chinese_hour = get_chinese_hour(hour, minute)
-        st.success(f"✅ {chinese_hour[0]} ({chinese_hour[2]})")
+        st.success(f"✅ {chinese_hour[0]} ({chinese_hour[1]})")
     else:
-        st.error("❌ Invalid format")
+        st.error("❌ Invalid")
         hour, minute = 12, 0
 
 with col3:
     palace_number = st.selectbox(
-        "Palace 宫位",
+        "🏛️ Palace 宫位",
         options=list(PALACES.keys()),
-        format_func=lambda x: f"#{x} {PALACES[x]['name']} ({PALACES[x]['direction']})",
-        index=4  # Default to Center (5)
+        format_func=lambda x: f"#{x} {PALACES[x]['icon']} {PALACES[x]['name']}",
+        index=4
     )
 
 # Generate Button
 if st.button("🔮 Generate QMDJ Chart 生成奇门盘", type="primary", use_container_width=True):
     if parsed_time:
-        with st.spinner("Calculating QMDJ chart... 正在计算奇门盘..."):
-            chart = generate_qmdj_chart(selected_date, hour, minute, palace_number)
-        
-        st.success("✅ Chart Generated! 盘局已生成!")
-        
-        # Store in session state
+        chart = generate_qmdj_chart(selected_date, hour, minute, palace_number)
         st.session_state.current_chart = chart
-        
-        # Display Results
+        st.success("✅ Chart Generated! 盘局已生成!")
+
+# Display Chart Results
+if 'current_chart' in st.session_state and st.session_state.current_chart:
+    chart = st.session_state.current_chart
+    
+    st.markdown("---")
+    
+    # Metadata
+    st.markdown(f"### 🏛️ Palace #{chart['palace']['number']} - {chart['palace']['name']}")
+    st.markdown(f"**Direction 方位:** {chart['palace']['direction']} | **Element 五行:** {chart['palace']['element']}")
+    
+    meta_cols = st.columns(4)
+    meta_cols[0].metric("📅 Date", chart['metadata']['date'])
+    meta_cols[1].metric("⏰ Time", chart['metadata']['time'])
+    meta_cols[2].metric("🕐 时辰", chart['metadata']['chinese_hour'])
+    meta_cols[3].metric("局", f"{chart['metadata']['structure']} #{chart['metadata']['ju_number']}")
+    
+    # Components - Using NATIVE Streamlit (no complex HTML!)
+    st.markdown("### 📋 Components 组件")
+    
+    comp_cols = st.columns(5)
+    
+    # Heaven Stem
+    with comp_cols[0]:
+        st.markdown("**Heaven Stem 天干**")
+        st.markdown(f"### {chart['components']['heaven_stem']}")
+    
+    # Earth Stem
+    with comp_cols[1]:
+        st.markdown("**Earth Stem 地干**")
+        st.markdown(f"### {chart['components']['earth_stem']}")
+    
+    # Star
+    with comp_cols[2]:
+        star = chart['components']['star']
+        st.markdown("**Star 九星**")
+        st.markdown(f"### {star['chinese']} {star['english']}")
+        nature_color = get_nature_color(star['nature'])
+        if nature_color == "green":
+            st.success(f"{star['nature']}")
+        elif nature_color == "red":
+            st.error(f"{star['nature']}")
+        else:
+            st.warning(f"{star['nature']}")
+        st.caption(f"{star['strength'][0]} ({star['strength'][1]:+d})")
+    
+    # Door
+    with comp_cols[3]:
+        door = chart['components']['door']
+        st.markdown("**Door 八门**")
+        st.markdown(f"### {door['chinese']} {door['english']}")
+        nature_color = get_nature_color(door['nature'])
+        if nature_color == "green":
+            st.success(f"{door['nature']}")
+        elif nature_color == "red":
+            st.error(f"{door['nature']}")
+        else:
+            st.warning(f"{door['nature']}")
+        st.caption(f"{door['strength'][0]} ({door['strength'][1]:+d})")
+    
+    # Deity
+    with comp_cols[4]:
+        deity = chart['components']['deity']
+        st.markdown("**Deity 八神**")
+        st.markdown(f"### {deity['chinese']} {deity['english']}")
+        nature_color = get_nature_color(deity['nature'])
+        if nature_color == "green":
+            st.success(f"{deity['nature']}")
+        elif nature_color == "red":
+            st.error(f"{deity['nature']}")
+        else:
+            st.warning(f"{deity['nature']}")
+    
+    # Formation
+    if chart.get('formation'):
         st.markdown("---")
-        st.markdown("## 📊 Chart Results 盘局结果")
+        st.markdown("### 🌟 Formation Detected! 格局发现!")
+        formation = chart['formation']
+        nature_color = get_nature_color(formation['nature'])
         
-        # Metadata
-        meta_col1, meta_col2, meta_col3 = st.columns(3)
+        if nature_color == "green":
+            st.success(f"**{formation['chinese']}** - {formation['english']}")
+        elif nature_color == "red":
+            st.error(f"**{formation['chinese']}** - {formation['english']}")
+        else:
+            st.warning(f"**{formation['chinese']}** - {formation['english']}")
         
-        with meta_col1:
-            st.markdown(f"""
-            **📅 Date 日期:** {chart['metadata']['date']}  
-            **⏰ Time 时间:** {chart['metadata']['time']}
-            """)
-        
-        with meta_col2:
-            st.markdown(f"""
-            **🕐 时辰:** {chart['metadata']['chinese_hour']} ({chart['metadata']['chinese_hour_animal']})  
-            **Structure 局:** {chart['metadata']['structure']}
-            """)
-        
-        with meta_col3:
-            st.markdown(f"""
-            **Ju Number 局数:** {chart['metadata']['ju_number']}  
-            **Method 方法:** {chart['metadata']['method']}
-            """)
-        
-        st.markdown("---")
-        
-        # Palace Info
-        palace = chart['palace']
-        st.markdown(f"""
-        ### 🏛️ Palace #{palace['number']} - {palace['name']}
-        **Direction 方位:** {palace['direction']} | **Element 五行:** {palace['element']}
-        """)
-        
-        # Components Display
-        st.markdown("### 📋 Components 组件")
-        
-        comp_cols = st.columns(5)
-        
-        components = [
-            ("Heaven Stem\n天干", chart['components']['heaven_stem']['full'], None, None),
-            ("Earth Stem\n地干", chart['components']['earth_stem']['full'], None, None),
-            ("Star\n九星", f"{chart['components']['star']['chinese']}\n{chart['components']['star']['english']}", 
-             chart['components']['star']['nature'], chart['components']['star']['strength']),
-            ("Door\n八门", f"{chart['components']['door']['chinese']}\n{chart['components']['door']['english']}", 
-             chart['components']['door']['nature'], chart['components']['door']['strength']),
-            ("Deity\n八神", f"{chart['components']['deity']['chinese']}\n{chart['components']['deity']['english']}", 
-             chart['components']['deity']['nature'], None),
-        ]
-        
-        for col, (label, value, nature, strength) in zip(comp_cols, components):
-            with col:
-                nature_color = get_nature_color(nature) if nature else "#d4af37"
-                
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                            padding: 15px; border-radius: 10px; text-align: center;
-                            border: 2px solid {nature_color}; min-height: 150px;">
-                    <p style="color: #888; font-size: 0.8em; margin-bottom: 10px;">{label}</p>
-                    <p style="font-size: 1.2em; color: white;">{value}</p>
-                    {f'<p style="color: {nature_color}; font-size: 0.9em; margin-top: 10px;">{nature}</p>' if nature else ''}
-                    {f'<p style="color: #888; font-size: 0.8em;">{strength[0]} ({strength[1]:+d})</p>' if strength else ''}
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Formation
-        if chart['formation']:
-            st.markdown("---")
-            formation = chart['formation']
-            nature_color = get_nature_color(formation['nature'])
-            
-            st.markdown(f"""
-            ### 🌟 Formation Detected! 格局发现!
-            <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                        padding: 20px; border-radius: 10px; border: 2px solid {nature_color};">
-                <h4 style="color: {nature_color};">{formation['chinese']} - {formation['english']}</h4>
-                <p><strong>Nature:</strong> {formation['nature']}</p>
-                <p><strong>Meaning:</strong> {formation['meaning']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Analysis Summary
-        st.markdown("---")
-        st.markdown("### 📝 Analysis Summary 分析总结")
-        
-        analysis = chart['analysis']
-        nature_color = get_nature_color(analysis['overall_nature'])
-        
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                    padding: 25px; border-radius: 15px; border: 3px solid {nature_color};">
-            <h3 style="color: {nature_color}; text-align: center;">{analysis['overall_nature']}</h3>
-            <p style="text-align: center; font-size: 1.1em;">{analysis['recommendation']}</p>
-            {f"<p style='text-align: center; color: #888; margin-top: 15px;'><em>Formation Impact: {analysis.get('formation_impact', 'N/A')}</em></p>" if chart['formation'] else ''}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Export Options
-        st.markdown("---")
-        st.markdown("### 📤 Export Options")
-        
-        export_col1, export_col2 = st.columns(2)
-        
-        with export_col1:
-            json_str = json.dumps(chart, indent=2, ensure_ascii=False)
-            st.download_button(
-                label="📥 Download JSON",
-                data=json_str,
-                file_name=f"qmdj_chart_{selected_date}_{hour:02d}{minute:02d}.json",
-                mime="application/json"
-            )
-        
-        with export_col2:
-            if st.button("📋 Copy to Clipboard"):
-                st.code(json_str, language="json")
-                st.info("Copy the JSON above manually (Ctrl+C / Cmd+C)")
-        
-        # Save to history
-        if 'analyses' not in st.session_state:
-            st.session_state.analyses = []
-        
+        st.markdown(f"**Nature:** {formation['nature']} | **Meaning:** {formation['meaning']}")
+    
+    # Verdict
+    st.markdown("---")
+    st.markdown("### 📝 Verdict 判断")
+    
+    verdict = chart['verdict']
+    if verdict['type'] == 'success':
+        st.success(f"## {verdict['text']}")
+    elif verdict['type'] == 'error':
+        st.error(f"## {verdict['text']}")
+    else:
+        st.warning(f"## {verdict['text']}")
+    
+    st.markdown(f"**Advice:** {verdict['advice']}")
+    
+    # Export Options
+    st.markdown("---")
+    st.markdown("### 📤 Export")
+    
+    export_cols = st.columns(2)
+    
+    with export_cols[0]:
+        json_str = json.dumps(chart, indent=2, ensure_ascii=False)
+        st.download_button(
+            "📥 Download JSON",
+            data=json_str,
+            file_name=f"qmdj_{chart['metadata']['date']}_{chart['metadata']['time'].replace(':', '')}.json",
+            mime="application/json",
+            use_container_width=True
+        )
+    
+    with export_cols[1]:
+        if st.button("📋 Show JSON", use_container_width=True):
+            st.json(chart)
+    
+    # Save to history
+    if 'analyses' not in st.session_state:
+        st.session_state.analyses = []
+    
+    # Check if already saved
+    existing = [a for a in st.session_state.analyses 
+                if a.get('date') == chart['metadata']['date'] 
+                and a.get('time') == chart['metadata']['time']
+                and a.get('palace') == chart['palace']['number']]
+    
+    if not existing:
         st.session_state.analyses.append({
-            "date": selected_date.isoformat(),
-            "time": f"{hour:02d}:{minute:02d}",
-            "palace": palace_number,
-            "verdict": analysis['overall_nature'],
-            "formation": chart['formation']['english'] if chart['formation'] else None,
+            "date": chart['metadata']['date'],
+            "time": chart['metadata']['time'],
+            "palace": chart['palace']['number'],
+            "verdict": verdict['text'],
+            "formation": chart['formation']['english'] if chart.get('formation') else None,
             "generated_at": datetime.now().isoformat()
         })
-        
-    else:
-        st.error("❌ Please enter a valid time in HH:MM format")
 
 # Footer
 st.markdown("---")
