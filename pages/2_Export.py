@@ -1,356 +1,508 @@
 """
-📤 Export to Analyst Page
-Seamless integration with Project 1 (Analyst Engine)
+Qi Men Pro - Export Page
+Phase 3: Enhanced export with Universal Schema v2.0 and CSV
 """
 
 import streamlit as st
 from datetime import datetime
 import json
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from config import PALACE_INFO, ELEMENT_EMOJI
-from utils.calculations import generate_chart
-from utils.bazi_profile import load_profile, calculate_bazi_alignment
-from utils.export_formatter import generate_analysis_prompt, generate_json_export, generate_csv_row
-from utils.language import get_lang
+import csv
+import io
 
 st.set_page_config(
-    page_title="Export - Qi Men Pro",
+    page_title="Export | Qi Men Pro",
     page_icon="📤",
     layout="wide"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .stApp { background-color: #1a1a2e; }
-    [data-testid="stSidebar"] { background-color: #16213e; }
-    h1, h2, h3 { color: #d4af37 !important; }
-    .copy-box {
-        background: #0d1117;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 1rem;
-        font-family: 'Monaco', 'Consolas', monospace;
-        font-size: 0.85rem;
-        color: #c9d1d9;
-        white-space: pre-wrap;
-        max-height: 400px;
-        overflow-y: auto;
+# Load custom CSS
+try:
+    with open("assets/style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except:
+    pass
+
+
+def format_universal_schema(chart_data, user_profile=None):
+    """
+    Format chart data to Universal Schema v2.0
+    Compatible with Project 1 (Analyst Engine)
+    """
+    
+    if not chart_data:
+        return None
+    
+    # Get user profile if available
+    profile = user_profile or st.session_state.get('user_profile', {})
+    
+    # Build Universal Schema v2.0 structure
+    schema = {
+        "schema_version": "2.0",
+        "schema_name": "QMDJ_BaZi_Integrated_Data_Schema",
+        
+        "metadata": {
+            "date_time": f"{chart_data['metadata']['date']} {chart_data['metadata']['time']}",
+            "timezone": "UTC+8",
+            "method": "Chai Bu",
+            "purpose": "Strategic",
+            "analysis_type": "QMDJ_BAZI_INTEGRATED" if profile else "QMDJ_ONLY"
+        },
+        
+        "qmdj_data": {
+            "chart_type": "Hour",
+            "structure": chart_data['metadata']['structure'],
+            "ju_number": chart_data['metadata']['ju_number'],
+            
+            "palace_analyzed": {
+                "name": chart_data['palace']['name'].split()[0],  # Just Chinese
+                "name_english": chart_data['palace']['name'].split()[1] if len(chart_data['palace']['name'].split()) > 1 else "",
+                "number": chart_data['palace']['number'],
+                "direction": chart_data['palace']['direction'],
+                "palace_element": chart_data['palace']['element']
+            },
+            
+            "components": {
+                "heaven_stem": {
+                    "character": chart_data['components']['heaven_stem']['chinese'],
+                    "pinyin": chart_data['components']['heaven_stem']['english'],
+                    "element": get_stem_element(chart_data['components']['heaven_stem']['full']),
+                    "polarity": get_stem_polarity(chart_data['components']['heaven_stem']['full'])
+                },
+                "earth_stem": {
+                    "character": chart_data['components']['earth_stem']['chinese'],
+                    "pinyin": chart_data['components']['earth_stem']['english'],
+                    "element": get_stem_element(chart_data['components']['earth_stem']['full']),
+                    "polarity": get_stem_polarity(chart_data['components']['earth_stem']['full'])
+                },
+                "door": {
+                    "chinese": chart_data['components']['door']['chinese'],
+                    "english": chart_data['components']['door']['english'],
+                    "element": chart_data['components']['door']['element'],
+                    "category": chart_data['components']['door']['nature'],
+                    "strength_in_palace": chart_data['components']['door']['strength'][0],
+                    "strength_score": chart_data['components']['door']['strength'][1]
+                },
+                "star": {
+                    "chinese": chart_data['components']['star']['chinese'],
+                    "english": chart_data['components']['star']['english'],
+                    "element": chart_data['components']['star']['element'],
+                    "category": chart_data['components']['star']['nature'],
+                    "strength_in_palace": chart_data['components']['star']['strength'][0],
+                    "strength_score": chart_data['components']['star']['strength'][1]
+                },
+                "deity": {
+                    "chinese": chart_data['components']['deity']['chinese'],
+                    "english": chart_data['components']['deity']['english'],
+                    "nature": chart_data['components']['deity']['nature']
+                }
+            },
+            
+            "formation": None
+        },
+        
+        "bazi_data": None,
+        
+        "synthesis": {
+            "qmdj_score": calculate_qmdj_score(chart_data),
+            "bazi_alignment_score": None,
+            "combined_verdict_score": None,
+            "verdict": chart_data['analysis']['overall_nature'].split()[0].upper(),
+            "confidence": "MEDIUM",
+            "primary_action": chart_data['analysis']['recommendation']
+        },
+        
+        "tracking": {
+            "db_row": generate_db_row(chart_data, profile),
+            "outcome_status": "PENDING",
+            "outcome_notes": "",
+            "feedback_date": None
+        }
     }
-</style>
-""", unsafe_allow_html=True)
-
-# Initialize session state
-if 'profile' not in st.session_state:
-    st.session_state.profile = load_profile()
-if 'current_chart' not in st.session_state:
-    st.session_state.current_chart = None
-if 'selected_palace' not in st.session_state:
-    st.session_state.selected_palace = None
-if 'export_palace' not in st.session_state:
-    st.session_state.export_palace = None
-if 'chart_purpose' not in st.session_state:
-    st.session_state.chart_purpose = "General Forecast"
-if 'lang_mode' not in st.session_state:
-    st.session_state.lang_mode = "mixed"
-
-# Initialize language helper
-L = get_lang(st.session_state.lang_mode)
-
-def main():
-    st.title("📤 Export to Analyst Engine")
     
-    # Check if we have a chart
-    if st.session_state.current_chart is None:
-        st.warning("⚠️ No chart generated yet. Please generate a chart first.")
-        
-        if st.button("Go to Chart Generator →", type="primary"):
-            st.switch_page("pages/1_Chart.py")
-        
-        st.markdown("""
-        <div style="margin-top: 2rem; padding: 2rem; background: #16213e; border-radius: 12px; 
-                    border: 1px solid #2a3f5f; text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔮</div>
-            <div style="color: #b8b8b8; font-size: 1rem;">
-                Generate a QMDJ chart and select a palace to export
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        return
+    # Add formation if present
+    if chart_data.get('formation'):
+        schema['qmdj_data']['formation'] = {
+            "primary_formation": {
+                "chinese": chart_data['formation']['chinese'],
+                "english": chart_data['formation']['english'],
+                "category": chart_data['formation']['nature'],
+                "meaning": chart_data['formation']['meaning'],
+                "source_book": "#64"
+            }
+        }
     
-    chart = st.session_state.current_chart
-    profile = st.session_state.profile
-    
-    # Use export_palace if set, otherwise use selected_palace
-    selected_palace = st.session_state.export_palace or st.session_state.selected_palace
-    
-    # Sidebar - Palace Selection
-    with st.sidebar:
-        st.markdown("### 📍 Select Palace")
-        
-        palace_options = {
-            f"{PALACE_INFO[i]['name']} ({PALACE_INFO[i]['direction']})": i 
-            for i in range(1, 10)
+    # Add BaZi data if user profile exists
+    if profile and profile.get('day_master'):
+        schema['bazi_data'] = {
+            "chart_source": "User Profile",
+            "day_master": {
+                "stem": profile.get('day_master', ''),
+                "element": profile.get('element', '').split()[0] if profile.get('element') else '',
+                "polarity": profile.get('polarity', ''),
+                "strength": profile.get('strength', '')
+            },
+            "useful_gods": {
+                "primary": profile.get('useful_gods', [''])[0] if profile.get('useful_gods') else '',
+                "secondary": profile.get('useful_gods', ['', ''])[1] if len(profile.get('useful_gods', [])) > 1 else ''
+            },
+            "unfavorable_elements": {
+                "primary": profile.get('unfavorable', [''])[0] if profile.get('unfavorable') else ''
+            },
+            "ten_god_profile": {
+                "profile_name": profile.get('profile', '')
+            }
         }
         
-        default_idx = list(palace_options.values()).index(selected_palace) if selected_palace in palace_options.values() else 0
+        # Calculate BaZi alignment score
+        bazi_score = calculate_bazi_alignment(chart_data, profile)
+        schema['synthesis']['bazi_alignment_score'] = bazi_score
         
-        selected_name = st.selectbox(
-            "Palace",
-            options=list(palace_options.keys()),
-            index=default_idx,
-            key="export_palace_select"
-        )
-        selected_palace = palace_options[selected_name]
+        # Calculate combined score
+        qmdj_score = schema['synthesis']['qmdj_score']
+        combined = round((qmdj_score + bazi_score) / 2, 1)
+        schema['synthesis']['combined_verdict_score'] = combined
+        schema['metadata']['analysis_type'] = "QMDJ_BAZI_INTEGRATED"
+    
+    return schema
+
+
+def get_stem_element(stem_full):
+    """Get element from stem"""
+    stem_elements = {
+        "甲": "Wood", "乙": "Wood",
+        "丙": "Fire", "丁": "Fire",
+        "戊": "Earth", "己": "Earth",
+        "庚": "Metal", "辛": "Metal",
+        "壬": "Water", "癸": "Water"
+    }
+    chinese = stem_full.split()[0]
+    return stem_elements.get(chinese, "Unknown")
+
+
+def get_stem_polarity(stem_full):
+    """Get polarity from stem"""
+    yang_stems = ["甲", "丙", "戊", "庚", "壬"]
+    chinese = stem_full.split()[0]
+    return "Yang" if chinese in yang_stems else "Yin"
+
+
+def calculate_qmdj_score(chart_data):
+    """Calculate QMDJ score (1-10)"""
+    base_score = 5
+    
+    # Add/subtract based on component natures
+    components = chart_data.get('components', {})
+    
+    for comp_name in ['star', 'door', 'deity']:
+        comp = components.get(comp_name, {})
+        nature = comp.get('nature', 'Neutral')
         
-        st.markdown("### 🎯 Purpose")
-        purpose = st.selectbox(
-            "Analysis Purpose",
-            ["General Forecast", "Wealth / Business", "Relationship", "Strategic Decision", "Date Selection"],
-            index=["General Forecast", "Wealth / Business", "Relationship", "Strategic Decision", "Date Selection"].index(st.session_state.chart_purpose),
-            key="export_purpose"
-        )
+        if 'Very Auspicious' in nature:
+            base_score += 2
+        elif nature == 'Auspicious':
+            base_score += 1
+        elif nature == 'Inauspicious':
+            base_score -= 1
         
-        st.markdown("### ℹ️ Chart Info")
+        # Add strength modifier for star and door
+        if comp_name in ['star', 'door']:
+            strength = comp.get('strength', (None, 0))
+            if strength and len(strength) > 1:
+                base_score += strength[1] * 0.3
+    
+    # Formation modifier
+    if chart_data.get('formation'):
+        formation_nature = chart_data['formation'].get('nature', 'Neutral')
+        if 'Very Auspicious' in formation_nature:
+            base_score += 2
+        elif formation_nature == 'Auspicious':
+            base_score += 1
+        elif formation_nature == 'Inauspicious':
+            base_score -= 1.5
+    
+    # Clamp to 1-10
+    return max(1, min(10, round(base_score, 1)))
+
+
+def calculate_bazi_alignment(chart_data, profile):
+    """Calculate BaZi alignment score (1-10)"""
+    if not profile or not profile.get('useful_gods'):
+        return None
+    
+    base_score = 5
+    useful_gods = [g.split()[0] for g in profile.get('useful_gods', [])]  # Get just element name
+    unfavorable = [g.split()[0] for g in profile.get('unfavorable', [])]
+    
+    # Check palace element
+    palace_element = chart_data.get('palace', {}).get('element', '')
+    if palace_element in useful_gods:
+        base_score += 2
+    elif palace_element in unfavorable:
+        base_score -= 2
+    
+    # Check component elements
+    components = chart_data.get('components', {})
+    for comp_name in ['star', 'door']:
+        comp = components.get(comp_name, {})
+        comp_element = comp.get('element', '')
+        if comp_element in useful_gods:
+            base_score += 1
+        elif comp_element in unfavorable:
+            base_score -= 1
+    
+    return max(1, min(10, round(base_score, 1)))
+
+
+def generate_db_row(chart_data, profile):
+    """Generate CSV database row"""
+    formation = chart_data.get('formation', {})
+    formation_name = formation.get('english', 'None') if formation else 'None'
+    
+    qmdj_score = calculate_qmdj_score(chart_data)
+    bazi_score = calculate_bazi_alignment(chart_data, profile) or 0
+    
+    verdict = chart_data.get('analysis', {}).get('overall_nature', 'Neutral').split()[0]
+    action = chart_data.get('analysis', {}).get('recommendation', '')[:50]  # Truncate
+    
+    row = [
+        chart_data['metadata']['date'],
+        chart_data['metadata']['time'],
+        chart_data['palace']['number'],
+        formation_name,
+        qmdj_score,
+        bazi_score,
+        verdict,
+        action,
+        "PENDING"
+    ]
+    
+    return ",".join(str(x) for x in row)
+
+
+def generate_csv_export(analyses):
+    """Generate CSV file from analyses history"""
+    if not analyses:
+        return None
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "Date", "Time", "Palace", "Formation", 
+        "QMDJ_Score", "BaZi_Score", "Verdict", "Action", "Outcome"
+    ])
+    
+    # Data rows
+    for analysis in analyses:
+        writer.writerow([
+            analysis.get('date', ''),
+            analysis.get('time', ''),
+            analysis.get('palace', ''),
+            analysis.get('formation', 'None'),
+            analysis.get('qmdj_score', ''),
+            analysis.get('bazi_score', ''),
+            analysis.get('verdict', ''),
+            analysis.get('action', '')[:50],
+            analysis.get('outcome', 'PENDING')
+        ])
+    
+    return output.getvalue()
+
+
+# ============ PAGE CONTENT ============
+
+st.title("📤 Export 导出")
+st.markdown("Export your QMDJ analysis data in various formats for Project 1 integration")
+
+# Check for current chart
+current_chart = st.session_state.get('current_chart')
+
+tab1, tab2, tab3 = st.tabs(["📄 Current Chart", "📊 Batch Export", "🔧 Format Options"])
+
+# ============ TAB 1: CURRENT CHART EXPORT ============
+with tab1:
+    if current_chart:
+        st.markdown("### 📊 Current Chart Data")
+        
+        # Show summary
         st.markdown(f"""
-        <div style="background: #1a1a2e; padding: 0.75rem; border-radius: 8px; border: 1px solid #2a3f5f;">
-            <div style="color: #b8b8b8; font-size: 0.85rem;">Date/Time</div>
-            <div style="color: #ffffff;">{chart.datetime.strftime('%Y-%m-%d %H:%M')}</div>
-            <div style="color: #b8b8b8; font-size: 0.85rem; margin-top: 0.5rem;">Structure</div>
-            <div style="color: #ffffff;">{chart.structure} · Ju {chart.ju_number}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Get palace data
-    palace_data = chart.palaces.get(selected_palace, {})
-    palace_info = PALACE_INFO[selected_palace]
-    formation = chart.detect_formation(selected_palace)
-    qmdj_score = chart.calculate_palace_score(selected_palace)
-    alignment = calculate_bazi_alignment(profile, palace_data)
-    bazi_score = alignment['score']
-    
-    # Main content
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
-                border: 1px solid rgba(212, 175, 55, 0.3);
-                border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="color: #d4af37; font-size: 1.3rem; font-weight: 600;">
-                    🎯 Selected Palace Analysis
-                </div>
-                <div style="color: #ffffff; font-size: 1.1rem; margin-top: 0.25rem;">
-                    {palace_info['name']} {palace_info['chinese']} ({palace_info['direction']})
-                </div>
-                <div style="color: #b8b8b8; font-size: 0.9rem;">
-                    Purpose: {purpose}
-                </div>
-            </div>
-            <div style="display: flex; gap: 1.5rem;">
-                <div style="text-align: center;">
-                    <div style="color: #b8b8b8; font-size: 0.75rem;">QMDJ</div>
-                    <div style="color: {'#4CAF50' if qmdj_score >= 7 else '#FFC107' if qmdj_score >= 4.5 else '#F44336'}; 
-                                font-size: 1.8rem; font-weight: 600;">{qmdj_score}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="color: #b8b8b8; font-size: 0.75rem;">BaZi</div>
-                    <div style="color: {'#4CAF50' if bazi_score >= 7 else '#FFC107' if bazi_score >= 4.5 else '#F44336'}; 
-                                font-size: 1.8rem; font-weight: 600;">{bazi_score}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Generate the analysis prompt
-    analysis_prompt = generate_analysis_prompt(
-        chart_datetime=chart.datetime,
-        timezone=chart.timezone,
-        structure=chart.structure,
-        ju_number=chart.ju_number,
-        palace_data=palace_data,
-        palace_name=palace_info['name'],
-        formation=formation,
-        bazi_profile=profile,
-        purpose=purpose
-    )
-    
-    # Main Export Section
-    st.markdown("### 📋 Analysis Prompt for Project 1")
-    st.markdown("<small style='color: #b8b8b8;'>Copy this prompt and paste directly into the Analyst Engine</small>", unsafe_allow_html=True)
-    
-    # Copy button with prominent styling
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        # Using text_area for copy functionality
-        st.text_area(
-            "Analysis Prompt",
-            value=analysis_prompt,
-            height=350,
-            key="prompt_text",
-            label_visibility="collapsed"
-        )
+        **Date:** {current_chart['metadata']['date']}  
+        **Time:** {current_chart['metadata']['time']}  
+        **Palace:** #{current_chart['palace']['number']} {current_chart['palace']['name']}  
+        **Verdict:** {current_chart['analysis']['overall_nature']}
+        """)
         
-        st.markdown("""
-        <div style="text-align: center; margin-top: 0.5rem;">
-            <small style="color: #b8b8b8;">
-                💡 Select all (Ctrl+A) and copy (Ctrl+C) the text above, then paste into Project 1
-            </small>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
-    
-    # Other Export Formats
-    st.markdown("### 📄 Other Export Formats")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div style="background: #16213e; border: 1px solid #2a3f5f; border-radius: 10px; 
-                    padding: 1rem; text-align: center;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📄</div>
-            <div style="color: #d4af37; font-weight: 600;">Full JSON Schema</div>
-            <div style="color: #b8b8b8; font-size: 0.8rem; margin-top: 0.25rem;">
-                Universal Schema v2.0 format
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("---")
         
-        # Generate JSON
-        json_export = generate_json_export(
-            chart_datetime=chart.datetime,
-            timezone=chart.timezone,
-            structure=chart.structure,
-            ju_number=chart.ju_number,
-            palace_data=palace_data,
-            palace_name=palace_info['name'],
-            formation=formation,
-            bazi_profile=profile,
-            qmdj_score=qmdj_score,
-            bazi_score=bazi_score,
-            purpose=purpose
-        )
+        # Export Options
+        col1, col2 = st.columns(2)
         
-        json_str = json.dumps(json_export, indent=2, ensure_ascii=False)
+        with col1:
+            st.markdown("#### 📄 Universal Schema v2.0 (JSON)")
+            st.caption("For Project 1 (Analyst Engine)")
+            
+            user_profile = st.session_state.get('user_profile')
+            schema_data = format_universal_schema(current_chart, user_profile)
+            
+            if schema_data:
+                json_str = json.dumps(schema_data, indent=2, ensure_ascii=False)
+                
+                st.download_button(
+                    label="📥 Download Universal Schema JSON",
+                    data=json_str,
+                    file_name=f"qmdj_universal_{current_chart['metadata']['date']}.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+                
+                with st.expander("👁️ Preview JSON"):
+                    st.code(json_str, language="json")
         
-        st.download_button(
-            label="Download JSON",
-            data=json_str,
-            file_name=f"qmdj_export_{chart.datetime.strftime('%Y%m%d_%H%M')}.json",
-            mime="application/json",
-            use_container_width=True
-        )
-    
-    with col2:
-        st.markdown("""
-        <div style="background: #16213e; border: 1px solid #2a3f5f; border-radius: 10px; 
-                    padding: 1rem; text-align: center;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📊</div>
-            <div style="color: #d4af37; font-weight: 600;">CSV Row</div>
-            <div style="color: #b8b8b8; font-size: 0.8rem; margin-top: 0.25rem;">
-                For database append
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        with col2:
+            st.markdown("#### 📋 Raw Chart Data (JSON)")
+            st.caption("Original chart format")
+            
+            raw_json = json.dumps(current_chart, indent=2, ensure_ascii=False)
+            
+            st.download_button(
+                label="📥 Download Raw Chart JSON",
+                data=raw_json,
+                file_name=f"qmdj_raw_{current_chart['metadata']['date']}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+            
+            with st.expander("👁️ Preview Raw JSON"):
+                st.code(raw_json, language="json")
         
-        csv_row = generate_csv_row(
-            chart_datetime=chart.datetime,
-            palace_data=palace_data,
-            palace_name=palace_info['name'],
-            formation=formation,
-            qmdj_score=qmdj_score,
-            bazi_score=bazi_score,
-            purpose=purpose
-        )
+        st.markdown("---")
         
-        st.download_button(
-            label="Download CSV Row",
-            data=csv_row,
-            file_name=f"qmdj_row_{chart.datetime.strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    
-    with col3:
-        st.markdown("""
-        <div style="background: #16213e; border: 1px solid #2a3f5f; border-radius: 10px; 
-                    padding: 1rem; text-align: center;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📝</div>
-            <div style="color: #d4af37; font-weight: 600;">Summary Text</div>
-            <div style="color: #b8b8b8; font-size: 0.8rem; margin-top: 0.25rem;">
-                Quick reference format
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Copy for Claude / Project 1
+        st.markdown("### 📋 Copy Analysis Prompt")
+        st.caption("One-click copy for Project 1 (Claude Analyst)")
         
-        summary = f"""QMDJ Analysis Summary
-Date: {chart.datetime.strftime('%Y-%m-%d %H:%M')} ({chart.timezone})
-Structure: {chart.structure}, Ju {chart.ju_number}
+        prompt_template = f"""Analyze this QMDJ chart using Joey Yap methodology:
 
-Palace: {palace_info['name']} ({palace_info['direction']})
-Element: {palace_info['element']}
+```json
+{json.dumps(schema_data, indent=2, ensure_ascii=False)}
+```
 
-Components:
-- Heaven Stem: {palace_data.get('heaven_stem', {}).get('chinese', '')} ({palace_data.get('heaven_stem', {}).get('element', '')})
-- Door: {palace_data.get('door', {}).get('name', '')}
-- Star: {palace_data.get('star', {}).get('name', '')}
-- Deity: {palace_data.get('deity', {}).get('name', '')}
-
-Formation: {formation.get('name', 'None') if formation else 'None'}
-
-Scores:
-- QMDJ: {qmdj_score}/10
-- BaZi Alignment: {bazi_score}/10
-- Combined: {round((qmdj_score + bazi_score) / 2, 1)}/10
-
-Verdict: {chart.get_verdict(qmdj_score)}
+Please provide:
+1. Overall assessment of the chart
+2. Key formations and their implications
+3. Timing recommendations
+4. Action advice based on the query purpose
 """
         
-        st.download_button(
-            label="Download Summary",
-            data=summary,
-            file_name=f"qmdj_summary_{chart.datetime.strftime('%Y%m%d_%H%M')}.txt",
-            mime="text/plain",
-            use_container_width=True
+        st.text_area(
+            "Copy this prompt:",
+            value=prompt_template,
+            height=300,
+            help="Copy and paste this into Project 1 for AI analysis"
         )
-    
-    # Workflow reminder
-    st.markdown("""
-    <div style="margin-top: 2rem; padding: 1.5rem; background: #16213e; border-radius: 12px; 
-                border: 1px solid #2a3f5f;">
-        <div style="color: #d4af37; font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">
-            🔄 Workflow: Project 2 → Project 1
-        </div>
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px; padding: 0.75rem; background: #1a1a2e; border-radius: 8px;">
-                <div style="color: #d4af37; font-weight: 500;">1. Generate</div>
-                <div style="color: #b8b8b8; font-size: 0.85rem;">Create chart & select palace ✓</div>
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 0.75rem; background: #1a1a2e; border-radius: 8px;">
-                <div style="color: #d4af37; font-weight: 500;">2. Export</div>
-                <div style="color: #b8b8b8; font-size: 0.85rem;">Copy analysis prompt ✓</div>
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 0.75rem; background: #1a1a2e; border-radius: 8px;">
-                <div style="color: #d4af37; font-weight: 500;">3. Analyze</div>
-                <div style="color: #b8b8b8; font-size: 0.85rem;">Paste into Project 1 →</div>
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 0.75rem; background: #1a1a2e; border-radius: 8px;">
-                <div style="color: #d4af37; font-weight: 500;">4. Track</div>
-                <div style="color: #b8b8b8; font-size: 0.85rem;">Update outcome in History</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Expander for JSON preview
-    with st.expander("📄 View Full JSON Schema"):
-        st.json(json_export)
+        
+    else:
+        st.info("📊 No current chart to export. Generate a chart first in the **Chart Generator** page!")
+        
+        if st.button("➡️ Go to Chart Generator"):
+            st.switch_page("pages/1_Chart.py")
 
-if __name__ == "__main__":
-    main()
+# ============ TAB 2: BATCH EXPORT ============
+with tab2:
+    st.markdown("### 📊 Export All Analyses")
+    
+    analyses = st.session_state.get('analyses', [])
+    
+    if analyses:
+        st.markdown(f"**Total Records:** {len(analyses)}")
+        
+        # Preview table
+        st.markdown("#### Preview")
+        st.dataframe(analyses, use_container_width=True)
+        
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # CSV Export
+            csv_data = generate_csv_export(analyses)
+            
+            st.download_button(
+                label="📥 Download All as CSV",
+                data=csv_data,
+                file_name=f"qmdj_history_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            # JSON Export (all)
+            json_all = json.dumps(analyses, indent=2, ensure_ascii=False)
+            
+            st.download_button(
+                label="📥 Download All as JSON",
+                data=json_all,
+                file_name=f"qmdj_history_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+    else:
+        st.info("📊 No analysis history yet. Generate some charts first!")
+
+# ============ TAB 3: FORMAT OPTIONS ============
+with tab3:
+    st.markdown("### 🔧 Export Format Reference")
+    
+    st.markdown("""
+    #### Universal Schema v2.0
+    
+    The Universal Schema is designed for compatibility with **Project 1 (Analyst Engine)**.
+    
+    **Key Sections:**
+    - `metadata` - Date, time, method, analysis type
+    - `qmdj_data` - Palace, components, formations
+    - `bazi_data` - Day Master, useful gods (if profile set)
+    - `synthesis` - Scores, verdict, recommendations
+    - `tracking` - ML database row, outcome status
+    
+    **Score Ranges:**
+    - QMDJ Score: 1-10 (based on components and formations)
+    - BaZi Alignment: 1-10 (based on useful gods match)
+    - Combined Score: 1-10 (average of both)
+    
+    **Verdict Categories:**
+    - `HIGHLY_AUSPICIOUS` (8-10)
+    - `AUSPICIOUS` (6-7.9)
+    - `NEUTRAL` (4-5.9)
+    - `INAUSPICIOUS` (2-3.9)
+    - `HIGHLY_INAUSPICIOUS` (1-1.9)
+    """)
+    
+    st.markdown("---")
+    
+    st.markdown("""
+    #### CSV Database Format
+    
+    **Columns:**
+    ```
+    Date, Time, Palace, Formation, QMDJ_Score, BaZi_Score, Verdict, Action, Outcome
+    ```
+    
+    **Example Row:**
+    ```
+    2025-01-15,14:30,5,Heaven Escape,8.5,7.0,AUSPICIOUS,Proceed with confidence,PENDING
+    ```
+    
+    **Outcome Values:**
+    - `PENDING` - Not yet verified
+    - `SUCCESS` - Outcome matched prediction
+    - `PARTIAL` - Partially matched
+    - `FAILURE` - Did not match
+    - `NOT_APPLICABLE` - Cannot be verified
+    """)
+
+# Footer
+st.markdown("---")
+st.caption("📤 Qi Men Pro Export | Phase 3 | Universal Schema v2.0 Compatible")
