@@ -1,10 +1,10 @@
 """
 Qi Men Pro v2.0 - Dashboard
-Phase 3: Fixed profile sync from Settings
+Phase 3: Fixed HTML rendering for profile card
 """
 
 import streamlit as st
-from datetime import datetime, time
+from datetime import datetime
 import json
 
 # Page config
@@ -23,7 +23,6 @@ except:
     pass
 
 # Initialize session state with DEFAULT profile
-# This will be overwritten when user saves from Settings
 if 'user_profile' not in st.session_state:
     st.session_state.user_profile = {
         "day_master": "庚 Geng",
@@ -44,22 +43,17 @@ if 'language' not in st.session_state:
 # ============ HELPER FUNCTIONS ============
 
 def parse_time_input(time_str):
-    """Parse time string in HH:MM format, returns (hour, minute) or None if invalid"""
+    """Parse time string in HH:MM format"""
     try:
-        # Clean the input
         time_str = time_str.strip().replace("：", ":").replace(".", ":")
-        
-        # Try parsing HH:MM format
         if ":" in time_str:
             parts = time_str.split(":")
             hour = int(parts[0])
             minute = int(parts[1]) if len(parts) > 1 else 0
         else:
-            # Try parsing as just hour (e.g., "14" → 14:00)
             hour = int(time_str)
             minute = 0
         
-        # Validate
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             return (hour, minute)
         else:
@@ -68,7 +62,7 @@ def parse_time_input(time_str):
         return None
 
 def get_chinese_hour(hour, minute=0):
-    """Convert 24h time to Chinese double-hour (时辰)"""
+    """Convert 24h time to Chinese double-hour"""
     total_minutes = hour * 60 + minute
     
     chinese_hours = [
@@ -86,80 +80,23 @@ def get_chinese_hour(hour, minute=0):
         ("亥 Hai", "21:00-22:59", "Pig 🐖"),
     ]
     
-    # Special handling for 子时 (spans midnight)
     if total_minutes >= 23 * 60 or total_minutes < 1 * 60:
         return chinese_hours[0]
     
-    # Find the correct hour
     hour_index = (hour + 1) // 2
     if hour_index >= 12:
         hour_index = 0
     
     return chinese_hours[hour_index]
 
-def get_element_color(element):
-    """Return color for element"""
-    colors = {
-        "Wood": "#228B22", "木": "#228B22",
-        "Fire": "#DC143C", "火": "#DC143C",
-        "Earth": "#DAA520", "土": "#DAA520",
-        "Metal": "#C0C0C0", "金": "#C0C0C0",
-        "Water": "#1E90FF", "水": "#1E90FF"
-    }
-    for key, color in colors.items():
-        if key.lower() in str(element).lower():
-            return color
-    return "#FFFFFF"
-
-def format_profile_display(profile):
-    """Format profile data for display, handling different data structures from Settings"""
-    
-    # Handle day_master - could be "庚 Geng" or just "庚" or dict
-    day_master = profile.get('day_master', 'Not Set')
-    if isinstance(day_master, dict):
-        day_master = day_master.get('stem', 'Not Set')
-    
-    # Handle element
-    element = profile.get('element', '')
-    if isinstance(element, dict):
-        element = element.get('element', '')
-    
-    # Handle polarity
-    polarity = profile.get('polarity', '')
-    
-    # Handle strength
-    strength = profile.get('strength', '')
-    
-    # Handle useful_gods - could be list of strings or list with element names
-    useful_gods = profile.get('useful_gods', [])
-    if isinstance(useful_gods, dict):
-        useful_gods = [useful_gods.get('primary', ''), useful_gods.get('secondary', '')]
-    if not isinstance(useful_gods, list):
-        useful_gods = [str(useful_gods)]
-    useful_gods = [g for g in useful_gods if g]
-    
-    # Handle unfavorable
-    unfavorable = profile.get('unfavorable', profile.get('unfavorable_elements', []))
-    if isinstance(unfavorable, dict):
-        unfavorable = [unfavorable.get('primary', '')]
-    if not isinstance(unfavorable, list):
-        unfavorable = [str(unfavorable)]
-    unfavorable = [u for u in unfavorable if u]
-    
-    # Handle profile name
-    profile_name = profile.get('profile', profile.get('ten_god_profile', {}).get('profile_name', 'Not Set'))
-    if isinstance(profile_name, dict):
-        profile_name = profile_name.get('profile_name', 'Not Set')
-    
-    return {
-        "day_master": day_master,
-        "element": element,
-        "polarity": polarity,
-        "strength": strength,
-        "useful_gods": useful_gods,
-        "unfavorable": unfavorable,
-        "profile": profile_name
-    }
+def get_profile_value(profile, key, default='Not set'):
+    """Safely get profile value handling different formats"""
+    value = profile.get(key, default)
+    if isinstance(value, dict):
+        return str(value.get('primary', value.get('stem', default)))
+    if isinstance(value, list):
+        return ' • '.join(str(v) for v in value if v)
+    return str(value) if value else default
 
 # ============ MAIN DASHBOARD ============
 
@@ -190,14 +127,12 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.markdown("### ⚡ Quick Chart 快速起盘")
     
-    # Date picker
     selected_date = st.date_input(
         "📅 Select Date 选择日期",
         value=datetime.now().date(),
         help="Choose the date for your QMDJ chart"
     )
     
-    # TIME INPUT - Now with text input for precise time!
     st.markdown("#### ⏰ Enter Time 输入时间")
     
     time_col1, time_col2 = st.columns([2, 1])
@@ -207,32 +142,28 @@ with col1:
             "Time (HH:MM format) 时间",
             value=datetime.now().strftime("%H:%M"),
             placeholder="e.g., 14:30",
-            help="Enter time in 24-hour format (HH:MM). Example: 09:15, 14:30, 23:45"
+            help="Enter time in 24-hour format (HH:MM)"
         )
     
-    # Parse and validate time
     parsed_time = parse_time_input(time_input)
     
     with time_col2:
         if parsed_time:
             hour, minute = parsed_time
             chinese_hour = get_chinese_hour(hour, minute)
-            st.success(f"✅ Valid")
+            st.success("✅ Valid")
             st.markdown(f"**{chinese_hour[0]}**")
             st.caption(f"{chinese_hour[2]}")
         else:
             st.error("❌ Invalid")
             st.caption("Use HH:MM format")
     
-    # Show Chinese hour info
     if parsed_time:
         hour, minute = parsed_time
         chinese_hour = get_chinese_hour(hour, minute)
         st.info(f"🕐 **Chinese Hour 时辰:** {chinese_hour[0]} ({chinese_hour[1]}) - {chinese_hour[2]}")
     
-    # Palace selection
     st.markdown("#### 🏛️ Select Palace 选择宫位")
-    palace_col1, palace_col2, palace_col3 = st.columns(3)
     
     palaces = [
         [("巽 Xun", 4, "SE"), ("离 Li", 9, "S"), ("坤 Kun", 2, "SW")],
@@ -252,7 +183,6 @@ with col1:
     
     st.markdown(f"**Selected Palace 选中宫位:** #{selected_palace}")
     
-    # Generate button
     if st.button("🔮 Generate Chart 生成盘", type="primary", use_container_width=True):
         if parsed_time:
             hour, minute = parsed_time
@@ -271,33 +201,45 @@ with col1:
             st.error("❌ Please enter a valid time in HH:MM format")
 
 with col2:
-    # User Profile Card - NOW READS PROPERLY FROM SESSION STATE
+    # User Profile Card - Using st.container and native Streamlit components
     st.markdown("### 👤 Your BaZi Profile")
     
-    # Get and format profile data
-    raw_profile = st.session_state.user_profile
-    profile = format_profile_display(raw_profile)
+    profile = st.session_state.user_profile
     
-    # Get element color for styling
-    elem_color = get_element_color(profile['element'])
-    
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                padding: 20px; border-radius: 15px; border: 1px solid #d4af37;">
-        <h4 style="color: #d4af37; margin-bottom: 15px;">日主 Day Master</h4>
-        <p style="font-size: 2em; margin: 0; color: {elem_color};">{profile['day_master']}</p>
-        <p style="color: #888;">{profile['element']} • {profile['polarity']} • {profile['strength']}</p>
+    # Use a container with native Streamlit formatting instead of HTML
+    with st.container():
+        # Day Master section
+        st.markdown("#### 日主 Day Master")
+        day_master = get_profile_value(profile, 'day_master')
+        element = get_profile_value(profile, 'element')
+        polarity = get_profile_value(profile, 'polarity')
+        strength = get_profile_value(profile, 'strength')
         
-        <h4 style="color: #d4af37; margin-top: 20px;">用神 Useful Gods</h4>
-        <p style="color: #4CAF50;">{' • '.join(profile['useful_gods']) if profile['useful_gods'] else 'Not set'}</p>
+        st.markdown(f"## {day_master}")
+        st.caption(f"{element} • {polarity} • {strength}")
         
-        <h4 style="color: #d4af37; margin-top: 15px;">忌神 Unfavorable</h4>
-        <p style="color: #f44336;">{' • '.join(profile['unfavorable']) if profile['unfavorable'] else 'Not set'}</p>
+        st.markdown("---")
         
-        <h4 style="color: #d4af37; margin-top: 15px;">性格 Profile</h4>
-        <p>{profile['profile']}</p>
-    </div>
-    """, unsafe_allow_html=True)
+        # Useful Gods
+        st.markdown("#### 用神 Useful Gods")
+        useful_gods = profile.get('useful_gods', [])
+        if isinstance(useful_gods, list) and useful_gods:
+            st.success(' • '.join(str(g) for g in useful_gods))
+        else:
+            st.info("Not set")
+        
+        # Unfavorable
+        st.markdown("#### 忌神 Unfavorable")
+        unfavorable = profile.get('unfavorable', [])
+        if isinstance(unfavorable, list) and unfavorable:
+            st.error(' • '.join(str(u) for u in unfavorable))
+        else:
+            st.info("Not set")
+        
+        # Profile
+        st.markdown("#### 性格 Profile")
+        profile_name = get_profile_value(profile, 'profile')
+        st.info(profile_name)
     
     st.markdown("")
     if st.button("⚙️ Update Profile", use_container_width=True):
