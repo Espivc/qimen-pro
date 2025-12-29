@@ -1,6 +1,6 @@
 """
 Qi Men Pro v2.0 - Dashboard
-Phase 3: Enhanced with time text input
+Phase 3: Fixed profile sync from Settings
 """
 
 import streamlit as st
@@ -22,7 +22,8 @@ try:
 except:
     pass
 
-# Initialize session state
+# Initialize session state with DEFAULT profile
+# This will be overwritten when user saves from Settings
 if 'user_profile' not in st.session_state:
     st.session_state.user_profile = {
         "day_master": "庚 Geng",
@@ -38,7 +39,7 @@ if 'analyses' not in st.session_state:
     st.session_state.analyses = []
 
 if 'language' not in st.session_state:
-    st.session_state.language = "mixed"  # english, chinese, mixed
+    st.session_state.language = "mixed"
 
 # ============ HELPER FUNCTIONS ============
 
@@ -99,17 +100,66 @@ def get_chinese_hour(hour, minute=0):
 def get_element_color(element):
     """Return color for element"""
     colors = {
-        "Wood": "#228B22",
-        "Fire": "#DC143C", 
-        "Earth": "#DAA520",
-        "Metal": "#C0C0C0",
-        "Water": "#1E90FF"
+        "Wood": "#228B22", "木": "#228B22",
+        "Fire": "#DC143C", "火": "#DC143C",
+        "Earth": "#DAA520", "土": "#DAA520",
+        "Metal": "#C0C0C0", "金": "#C0C0C0",
+        "Water": "#1E90FF", "水": "#1E90FF"
     }
-    # Handle Chinese/mixed format
-    for eng, color in colors.items():
-        if eng.lower() in element.lower():
+    for key, color in colors.items():
+        if key.lower() in str(element).lower():
             return color
     return "#FFFFFF"
+
+def format_profile_display(profile):
+    """Format profile data for display, handling different data structures from Settings"""
+    
+    # Handle day_master - could be "庚 Geng" or just "庚" or dict
+    day_master = profile.get('day_master', 'Not Set')
+    if isinstance(day_master, dict):
+        day_master = day_master.get('stem', 'Not Set')
+    
+    # Handle element
+    element = profile.get('element', '')
+    if isinstance(element, dict):
+        element = element.get('element', '')
+    
+    # Handle polarity
+    polarity = profile.get('polarity', '')
+    
+    # Handle strength
+    strength = profile.get('strength', '')
+    
+    # Handle useful_gods - could be list of strings or list with element names
+    useful_gods = profile.get('useful_gods', [])
+    if isinstance(useful_gods, dict):
+        useful_gods = [useful_gods.get('primary', ''), useful_gods.get('secondary', '')]
+    if not isinstance(useful_gods, list):
+        useful_gods = [str(useful_gods)]
+    useful_gods = [g for g in useful_gods if g]
+    
+    # Handle unfavorable
+    unfavorable = profile.get('unfavorable', profile.get('unfavorable_elements', []))
+    if isinstance(unfavorable, dict):
+        unfavorable = [unfavorable.get('primary', '')]
+    if not isinstance(unfavorable, list):
+        unfavorable = [str(unfavorable)]
+    unfavorable = [u for u in unfavorable if u]
+    
+    # Handle profile name
+    profile_name = profile.get('profile', profile.get('ten_god_profile', {}).get('profile_name', 'Not Set'))
+    if isinstance(profile_name, dict):
+        profile_name = profile_name.get('profile_name', 'Not Set')
+    
+    return {
+        "day_master": day_master,
+        "element": element,
+        "polarity": polarity,
+        "strength": strength,
+        "useful_gods": useful_gods,
+        "unfavorable": unfavorable,
+        "profile": profile_name
+    }
 
 # ============ MAIN DASHBOARD ============
 
@@ -221,23 +271,28 @@ with col1:
             st.error("❌ Please enter a valid time in HH:MM format")
 
 with col2:
-    # User Profile Card
+    # User Profile Card - NOW READS PROPERLY FROM SESSION STATE
     st.markdown("### 👤 Your BaZi Profile")
     
-    profile = st.session_state.user_profile
+    # Get and format profile data
+    raw_profile = st.session_state.user_profile
+    profile = format_profile_display(raw_profile)
+    
+    # Get element color for styling
+    elem_color = get_element_color(profile['element'])
     
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
                 padding: 20px; border-radius: 15px; border: 1px solid #d4af37;">
         <h4 style="color: #d4af37; margin-bottom: 15px;">日主 Day Master</h4>
-        <p style="font-size: 2em; margin: 0;">{profile['day_master']}</p>
+        <p style="font-size: 2em; margin: 0; color: {elem_color};">{profile['day_master']}</p>
         <p style="color: #888;">{profile['element']} • {profile['polarity']} • {profile['strength']}</p>
         
         <h4 style="color: #d4af37; margin-top: 20px;">用神 Useful Gods</h4>
-        <p style="color: #4CAF50;">{'  •  '.join(profile['useful_gods'])}</p>
+        <p style="color: #4CAF50;">{' • '.join(profile['useful_gods']) if profile['useful_gods'] else 'Not set'}</p>
         
         <h4 style="color: #d4af37; margin-top: 15px;">忌神 Unfavorable</h4>
-        <p style="color: #f44336;">{'  •  '.join(profile['unfavorable'])}</p>
+        <p style="color: #f44336;">{' • '.join(profile['unfavorable']) if profile['unfavorable'] else 'Not set'}</p>
         
         <h4 style="color: #d4af37; margin-top: 15px;">性格 Profile</h4>
         <p>{profile['profile']}</p>
