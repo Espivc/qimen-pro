@@ -498,6 +498,9 @@ def generate_db_row(chart, universal):
     synthesis = universal.get('synthesis', {})
     formation = universal.get('qmdj_data', {}).get('formation', {}).get('primary_formation', {})
     
+    # Clean primary action for CSV (replace quotes with single quotes)
+    primary_action = synthesis.get('primary_action', '').replace('"', "'")
+    
     row = (
         f"{metadata.get('date', '')},"
         f"{metadata.get('time', '')},"
@@ -506,7 +509,7 @@ def generate_db_row(chart, universal):
         f"{synthesis.get('qmdj_score', {}).get('final_qmdj_score', 'N/A')},"
         f"{synthesis.get('bazi_alignment_score', {}).get('final_bazi_score', 'N/A')},"
         f"{synthesis.get('verdict', '')},"
-        f"\"{synthesis.get('primary_action', '').replace('\"', \"'\")}\","
+        f'"{primary_action}",'
         f"PENDING"
     )
     return row
