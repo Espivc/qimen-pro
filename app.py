@@ -1,13 +1,13 @@
 """
 Qi Men Pro v2.0 - Dashboard
-Phase 3: Fixed HTML rendering for profile card
+Phase 3: Fixed to always read fresh session state
 """
 
 import streamlit as st
 from datetime import datetime
 import json
 
-# Page config
+# Page config - MUST be first Streamlit command
 st.set_page_config(
     page_title="奇門 Qi Men Pro",
     page_icon="🔮",
@@ -22,7 +22,8 @@ try:
 except:
     pass
 
-# Initialize session state with DEFAULT profile
+# Initialize session state ONLY if not exists
+# This ensures we don't overwrite saved data from Settings!
 if 'user_profile' not in st.session_state:
     st.session_state.user_profile = {
         "day_master": "庚 Geng",
@@ -36,9 +37,6 @@ if 'user_profile' not in st.session_state:
 
 if 'analyses' not in st.session_state:
     st.session_state.analyses = []
-
-if 'language' not in st.session_state:
-    st.session_state.language = "mixed"
 
 # ============ HELPER FUNCTIONS ============
 
@@ -56,8 +54,7 @@ def parse_time_input(time_str):
         
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             return (hour, minute)
-        else:
-            return None
+        return None
     except:
         return None
 
@@ -88,15 +85,6 @@ def get_chinese_hour(hour, minute=0):
         hour_index = 0
     
     return chinese_hours[hour_index]
-
-def get_profile_value(profile, key, default='Not set'):
-    """Safely get profile value handling different formats"""
-    value = profile.get(key, default)
-    if isinstance(value, dict):
-        return str(value.get('primary', value.get('stem', default)))
-    if isinstance(value, list):
-        return ' • '.join(str(v) for v in value if v)
-    return str(value) if value else default
 
 # ============ MAIN DASHBOARD ============
 
@@ -201,49 +189,65 @@ with col1:
             st.error("❌ Please enter a valid time in HH:MM format")
 
 with col2:
-    # User Profile Card - Using st.container and native Streamlit components
+    # ============ USER PROFILE CARD ============
+    # Read FRESH from session state every time
     st.markdown("### 👤 Your BaZi Profile")
     
+    # Get current profile from session state
     profile = st.session_state.user_profile
     
-    # Use a container with native Streamlit formatting instead of HTML
-    with st.container():
-        # Day Master section
-        st.markdown("#### 日主 Day Master")
-        day_master = get_profile_value(profile, 'day_master')
-        element = get_profile_value(profile, 'element')
-        polarity = get_profile_value(profile, 'polarity')
-        strength = get_profile_value(profile, 'strength')
-        
-        st.markdown(f"## {day_master}")
-        st.caption(f"{element} • {polarity} • {strength}")
-        
-        st.markdown("---")
-        
-        # Useful Gods
-        st.markdown("#### 用神 Useful Gods")
-        useful_gods = profile.get('useful_gods', [])
-        if isinstance(useful_gods, list) and useful_gods:
-            st.success(' • '.join(str(g) for g in useful_gods))
-        else:
-            st.info("Not set")
-        
-        # Unfavorable
-        st.markdown("#### 忌神 Unfavorable")
-        unfavorable = profile.get('unfavorable', [])
-        if isinstance(unfavorable, list) and unfavorable:
-            st.error(' • '.join(str(u) for u in unfavorable))
-        else:
-            st.info("Not set")
-        
-        # Profile
-        st.markdown("#### 性格 Profile")
-        profile_name = get_profile_value(profile, 'profile')
-        st.info(profile_name)
+    # Extract values safely
+    day_master = profile.get('day_master', 'Not Set')
+    element = profile.get('element', '')
+    polarity = profile.get('polarity', '')
+    strength = profile.get('strength', '')
+    
+    # Handle useful_gods (could be list or other format)
+    useful_gods = profile.get('useful_gods', [])
+    if isinstance(useful_gods, list):
+        useful_gods_str = ' • '.join(str(g) for g in useful_gods if g)
+    else:
+        useful_gods_str = str(useful_gods)
+    
+    # Handle unfavorable
+    unfavorable = profile.get('unfavorable', [])
+    if isinstance(unfavorable, list):
+        unfavorable_str = ' • '.join(str(u) for u in unfavorable if u)
+    else:
+        unfavorable_str = str(unfavorable)
+    
+    # Profile name
+    profile_name = profile.get('profile', 'Not Set')
+    
+    # Display using native Streamlit components
+    st.markdown("#### 日主 Day Master")
+    st.markdown(f"## {day_master}")
+    st.caption(f"{element} • {polarity} • {strength}")
+    
+    st.markdown("---")
+    
+    st.markdown("#### 用神 Useful Gods")
+    if useful_gods_str:
+        st.success(useful_gods_str)
+    else:
+        st.info("Not set")
+    
+    st.markdown("#### 忌神 Unfavorable")
+    if unfavorable_str:
+        st.error(unfavorable_str)
+    else:
+        st.info("Not set")
+    
+    st.markdown("#### 性格 Profile")
+    st.info(profile_name)
     
     st.markdown("")
     if st.button("⚙️ Update Profile", use_container_width=True):
         st.switch_page("pages/4_Settings.py")
+    
+    # Show last updated info if available
+    if profile.get('birth_date'):
+        st.caption(f"📅 Birth: {profile.get('birth_date')} {profile.get('birth_time', '')}")
 
 # Recent analyses
 st.markdown("---")
@@ -258,4 +262,4 @@ else:
 
 # Footer
 st.markdown("---")
-st.caption("🔮 Qi Men Pro v2.0 | Phase 3 | Joey Yap Methodology | Universal Schema v2.0")
+st.caption("🔮 Qi Men Pro v2.0 | Phase 3 | Joey Yap Methodology")
