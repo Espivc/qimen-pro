@@ -1,6 +1,6 @@
 # 🔮 QI MEN PRO - PROJECT STATE TRACKER
 **Last Updated:** 2025-12-29
-**Version:** 2.0 (Phase 2 - COMPLETE ✅)
+**Version:** 2.1 (Phase 3 - IN PROGRESS)
 **Status:** 🟢 LIVE AND WORKING
 
 ---
@@ -11,7 +11,8 @@
 **Deployment:** Streamlit Cloud ✅ DEPLOYED  
 **Access:** Desktop (home) + iPhone (travel)  
 **Integration:** Feeds data to Project 1 (Analyst Engine)  
-**Live URL:** https://qimen-pro-qfvejjsappeenzfeuretzw9.streamlit.app/
+**Live URL:** https://qimen-pro-qfvejjsappeenzfeuretzw9.streamlit.app/  
+**Repository:** https://github.com/Espivc/qimen-pro
 
 ---
 
@@ -20,419 +21,246 @@
 ### **Phase 1: Professional Styling** ✅ COMPLETE
 **Completed:** 2025-12-28
 
-**Achievements:**
-- [x] Added `.streamlit/config.toml` (dark theme with gold accents)
-- [x] Added `assets/style.css` (professional styling)
-- [x] Updated `config.py` (enhanced with colors, palace info, Ten God profiles)
-- [x] Deployed to Streamlit Cloud
-- [x] Tested on iPhone - mobile responsive working
-- [x] Dark navy (#1a1a2e) background with gold (#d4af37) accents implemented
-
-**Status:** ✅ Live and working
+- [x] Dark theme with gold accents
+- [x] Professional CSS styling
+- [x] Mobile responsive design
+- [x] Streamlit Cloud deployment
 
 ---
 
 ### **Phase 2: Modular Architecture** ✅ COMPLETE
 **Completed:** 2025-12-29
 
-**Achievements:**
-- [x] Created modular file structure (pages/, utils/ folders)
-- [x] Added 4 separate page files (Chart, Export, History, Settings)
-- [x] Added 8 utility modules (calculations, database, BaZi calculator, etc.)
-- [x] Real QMDJ calculations (not placeholders)
+- [x] 5-page structure (Dashboard, Chart, Export, History, Settings)
+- [x] Utility modules (calculations, database, mappings)
 - [x] BaZi Calculator integration
-- [x] Language support (English + Chinese 中文)
-- [x] Element color coding throughout
-- [x] ML tracking database (CSV)
+- [x] Mixed language support (English + Chinese)
 - [x] Universal Schema v2.0 JSON export
-- [x] All files uploaded to GitHub
-- [x] Streamlit Cloud deployment successful
-- [x] Desktop tested ✅
-- [x] iPhone tested ✅
-- [x] Sidebar navigation working ✅
-- [x] Chinese characters displaying correctly ✅
 
-**File Structure Implemented:**
+---
+
+### **Phase 3: Enhanced Features** 🔄 IN PROGRESS
+**Started:** 2025-12-29
+
+#### ✅ Completed:
+- [x] **Time text input (HH:MM)** - Replaced dropdown with precise time input
+- [x] **Profile sync fix** - Settings → Dashboard sync now working
+- [x] **Callback pattern** - Using `on_click` callback for reliable saves
+- [x] **Session state management** - Proper state handling across pages
+- [x] **Chinese hour display** - Shows 时辰 with animal zodiac
+
+#### 📋 Pending:
+- [ ] Real QMDJ calculations (kinqimen library integration)
+- [ ] Formation detection (Joey Yap #64/#73)
+- [ ] Improved export formatting
+- [ ] Enhanced BaZi Day Master analysis
+- [ ] ML feedback loop for outcome tracking
+- [ ] Persistent storage (save profile to file)
+
+---
+
+## 📁 CURRENT FILE STRUCTURE
+
 ```
 qimen-pro/
 ├── .streamlit/
-│   └── config.toml
+│   └── config.toml          ✅ Dark theme config
 ├── assets/
-│   └── style.css
+│   └── style.css            ✅ Professional styling
 ├── pages/
-│   ├── 1_Chart.py          ✅ Working
-│   ├── 2_Export.py         ✅ Working
-│   ├── 3_History.py        ✅ Working
-│   └── 4_Settings.py       ✅ Working (with BaZi Calculator!)
+│   ├── 1_Chart.py           ✅ Chart Generator
+│   ├── 2_Export.py          ✅ Export page
+│   ├── 3_History.py         ✅ History & ML tracking
+│   └── 4_Settings.py        ✅ Settings (v4 - with callback fix)
 ├── utils/
 │   ├── __init__.py
-│   ├── bazi_calculator.py  ✅ Pure Python BaZi
+│   ├── bazi_calculator.py   ✅ Pure Python BaZi
 │   ├── bazi_profile.py
-│   ├── calculations.py     ✅ QMDJ engine
-│   ├── database.py         ✅ ML tracking
-│   ├── export_formatter.py ✅ JSON export
-│   ├── language.py         ✅ Mixed language
-│   └── mappings.py         ✅ Joey Yap terms
+│   ├── calculations.py      ✅ QMDJ calculations
+│   ├── database.py          ✅ ML tracking
+│   ├── export_formatter.py  ✅ JSON export
+│   ├── language.py          ✅ Mixed language
+│   └── mappings.py          ✅ Joey Yap terms
 ├── data/
 │   └── .gitkeep
-├── app.py                  ✅ Dashboard
-├── config.py               ✅ Enhanced
-├── requirements.txt        ✅ Working
-├── PROJECT_STATE.md        ← This file
-├── PHASE2_UPLOAD_GUIDE.md
-└── FILES_SUMMARY.md
+├── app.py                   ✅ Dashboard (v3 - with profile display fix)
+├── config.py                ✅ Configuration
+├── requirements.txt         ✅ Dependencies
+└── PROJECT_STATE.md         ← This file
 ```
 
-**Status:** 🟢 Live and fully functional
-
 ---
 
-## 🎯 CURRENT FEATURES (All Working!)
+## 🎯 CURRENT FEATURES
 
-### **1. Dashboard (app.py)** ✅
-- Quick chart generator
-- BaZi profile card with 庚 Chinese characters
-- Statistics overview (total analyses, success rate, pending count)
+### **Dashboard (app.py)** ✅
+- Quick chart generator with date/time input
+- **Time text input (HH:MM)** - NEW in Phase 3!
+- Chinese hour (时辰) display with zodiac animal
+- Palace selection (9-palace grid)
+- BaZi profile card (synced from Settings)
 - Recent analyses display
-- Settings shortcut button
-- History navigation button
 
-### **2. Chart Generator (pages/1_Chart.py)** ✅
-- Date/time picker
-- Palace selection (1-9)
-- Real QMDJ calculations
-- Formation detection
+### **Settings (4_Settings.py)** ✅
+- **Birthday Calculator** with precise time input
+- Four Pillars (四柱) calculation and display
+- Day Master analysis with useful gods
+- **Save profile with callback** - Fixed in Phase 3!
+- Profile tab showing saved data
+- Debug expander for troubleshooting
+
+### **Chart Generator (1_Chart.py)** ✅
+- Date/time selection
+- Palace selection
+- Basic QMDJ calculations
 - Element color coding
-- Export capability
 
-### **3. Export (pages/2_Export.py)** ✅
-- JSON export (Universal Schema v2.0)
+### **Export (2_Export.py)** ✅
+- Universal Schema v2.0 JSON format
 - Copy to clipboard
 - Download functionality
-- Formatted display
 
-### **4. History & ML (pages/3_History.py)** ✅
-- Past chart tracking
-- Pattern analysis
-- Success rate metrics
-- Filters and sorting
-
-### **5. Settings (pages/4_Settings.py)** ✅ **ENHANCED!**
-- **Birthday Calculator 生日计算器** (NEW!)
-  - Input: Birth date + birth hour
-  - Output: Complete BaZi (Four Pillars 四柱)
-  - Shows: Day Master 日主, Strength 强弱, Useful Gods 用神
-  - Profile: Ten God personality type
-  - Special structures detection
-- User BaZi profile management
-- Language preferences
-- Data management
+### **History (3_History.py)** ✅
+- Analysis tracking
+- Outcome recording
+- Basic statistics
 
 ---
 
-## 🎓 USER PROFILE (BaZi)
+## 🔧 TECHNICAL DECISIONS (Phase 3)
 
-**Your Profile (Ben):**
-- **Day Master 日主:** 庚 Geng (Metal 金 - Yang)
-- **Strength 强弱:** Weak
-- **Useful Gods 用神:** 土 Earth ⊕, 金 Metal ⚪
-- **Unfavorable 忌神:** 火 Fire 🔥, 木 Wood 🌳
-- **Profile 性格:** 🎯 Pioneer (Indirect Wealth 偏财)
-- **Special Structure:** None (in your chart)
+### **Why Callback Pattern for Save?**
+```python
+st.button("Save", on_click=save_profile_callback)
+```
+- Streamlit reruns page on every button click
+- Data calculated before click was lost on rerun
+- `on_click` callback runs BEFORE rerun, ensuring data is saved
+- This is the recommended Streamlit pattern for form submissions
 
-**Sample BaZi Calculated (1985-01-01 12:00):**
-- **Year 年柱:** 甲子 Jia-Zi (Rat)
-- **Month 月柱:** 丙寅 Bing-Yin
-- **Day 日柱:** 庚子 Geng-Zi (Day Master)
-- **Hour 时柱:** 壬午 Ren-Wu
+### **Why Session State for Profile?**
+- `st.session_state.user_profile` persists across page navigation
+- Shared between Dashboard and Settings
+- Must initialize with `if 'key' not in st.session_state`
+
+### **Why Text Input for Time?**
+- Dropdown limited to preset values
+- Text input allows exact minute precision (e.g., 02:37)
+- Important for boundary times between 时辰
+- Better UX for users who know exact birth time
+
+---
+
+## 🐛 ISSUES RESOLVED (Phase 3)
+
+### **Issue: Profile Not Syncing** ❌ → ✅ FIXED
+**Problem:** Saving profile in Settings didn't update Dashboard  
+**Cause:** Streamlit rerun pattern losing calculated data  
+**Solution:** Used `on_click=callback` pattern to save before rerun  
+**Files Changed:** `pages/4_Settings.py` (v4)
+
+### **Issue: HTML Not Rendering** ❌ → ✅ FIXED
+**Problem:** Raw HTML code showing in profile card  
+**Cause:** Complex f-string with HTML breaking markdown  
+**Solution:** Replaced with native Streamlit components (`st.success`, `st.error`, etc.)  
+**Files Changed:** `app.py` (v3)
+
+### **Issue: Time Dropdown Limited** ❌ → ✅ FIXED
+**Problem:** Could only select preset hour values  
+**Solution:** Changed to text input with HH:MM parsing  
+**Files Changed:** `app.py`, `pages/4_Settings.py`
+
+---
+
+## 🎓 USER PROFILE (Ben's BaZi)
+
+**Day Master 日主:** 庚 Geng (Metal 金 - Yang)  
+**Strength 强弱:** Weak  
+**Useful Gods 用神:** Earth 土, Metal 金  
+**Unfavorable 忌神:** Fire 火, Wood 木  
+**Profile 性格:** Pioneer 🎯 (Indirect Wealth 偏财)
 
 ---
 
 ## 📱 DEPLOYMENT INFO
 
-**Platform:** Streamlit Cloud  
-**Repository:** https://github.com/Espivc/qimen-pro  
-**Branch:** main  
-**Main File:** app.py  
-**Live URL:** https://qimen-pro-qfvejjsappeenzfeuretzw9.streamlit.app/
-
-**Device Access:**
-- ✅ Desktop: Browser access (Chrome, Edge, Safari)
-- ✅ iPhone: Safari + "Add to Home Screen" for app-like experience
-- ✅ Mobile responsive design working
-
-**Last Deployed:** 2025-12-29  
-**Last Successful Build:** 2025-12-29 (after reboot)
+| Item | Value |
+|------|-------|
+| Platform | Streamlit Cloud |
+| Repository | github.com/Espivc/qimen-pro |
+| Branch | main |
+| Main File | app.py |
+| Live URL | qimen-pro-qfvejjsappeenzfeuretzw9.streamlit.app |
 
 ---
 
-## 🔧 TECHNICAL DECISIONS
+## 📝 NEXT STEPS (Priority Order)
 
-### **Why Modular Architecture?**
-✅ Easier to maintain and extend  
-✅ Better code organization (separate concerns)  
-✅ Can add features without breaking existing code  
-✅ Professional development pattern  
-
-### **Why Pure Python BaZi Calculator?**
-✅ No C++ dependencies (avoids Windows compiler issues)  
-✅ Works on Streamlit Cloud without issues  
-✅ Fully portable and maintainable  
-
-### **Why Joey Yap Methodology?**
-✅ Clear formation definitions  
-✅ Standardized terminology (English + Chinese)  
-✅ Books #64, #71, #72, #73 as authoritative references  
-
-### **Why Solar Calendar (阳历) for BaZi?**
-✅ BaZi uses Solar Calendar + Solar Terms (24节气)  
-✅ NOT Lunar Calendar (农历) - common misconception!  
-✅ Ensures accurate Four Pillars calculation  
-
-### **Time Precision (2-Hour Periods 时辰):**
-✅ Traditional BaZi uses 12 two-hour periods  
-✅ Current system: Hour dropdown (standard approach)  
-📋 **Future consideration:** Add minutes input for boundary cases  
-
----
-
-## 🐛 ISSUES RESOLVED
-
-### **Issue 1: Wrong app.py Deployed** ❌ → ✅ FIXED
-**Problem:** Initial Phase 2 upload used old single-file app.py  
-**Symptom:** No dashboard, HTML code showing, errors  
-**Solution:** Replaced with correct modular dashboard app.py  
-**Status:** ✅ RESOLVED (2025-12-29)
-
-### **Issue 2: Streamlit Cache** ❌ → ✅ FIXED
-**Problem:** Streamlit Cloud showed old cached version  
-**Symptom:** Updates not appearing despite GitHub having correct files  
-**Solution:** Rebooted app in Streamlit Cloud dashboard  
-**Status:** ✅ RESOLVED (2025-12-29)
-
-### **Issue 3: Pages Not Found** ❌ → ✅ FIXED
-**Problem:** Error "Could not find page: pages/3_History.py"  
-**Symptom:** Files existed in GitHub but Streamlit couldn't find them  
-**Solution:** Forced rebuild + cache clear  
-**Status:** ✅ RESOLVED (2025-12-29)
-
----
-
-## 📝 KNOWN LIMITATIONS & FUTURE ENHANCEMENTS
-
-### **Current Limitations:**
-1. **BaZi Time Input:** Uses 2-hour periods (时辰), not exact minutes
-   - **Impact:** Minor - traditional BaZi uses 2-hour periods anyway
-   - **Enhancement:** Could add minutes input for boundary cases (e.g., 00:30 vs 01:30)
-
-2. **QMDJ Calculations:** Uses placeholder/simplified calculations
-   - **Impact:** Medium - functional but not full Joey Yap methodology
-   - **Enhancement:** Integrate full kinqimen library with Chai Bu method
-
-3. **Single User Profile:** Settings stores only one BaZi profile (user's own)
-   - **Impact:** Medium - can't save multiple client profiles
-   - **Enhancement:** Add client database for multiple BaZi profiles
-
-### **Potential Future Features:**
-- [ ] Minutes input for precise birth time (for boundary cases)
-- [ ] Full kinqimen integration for real QMDJ calculations
-- [ ] Client database (store multiple BaZi profiles)
-- [ ] Advanced formation analysis (full Joey Yap books integration)
-- [ ] Auspicious timing recommendations (择日 Ze Ri)
-- [ ] Annual/monthly forecasts (流年 Liu Nian)
-- [ ] Relationship compatibility analysis (合婚 He Hun)
-
----
-
-## 📖 REFERENCE BOOKS
-
-**Joey Yap QMDJ Series:**
-- **Book #64:** QMDJ Formations (Auspicious/Inauspicious)
-- **Book #71:** Sun Tzu - Host/Guest Analysis
-- **Book #72:** Timing and Hour Selection (择时)
-- **Book #73:** Advanced Formations
-
-**BaZi References:**
-- Solar Calendar (阳历) vs Lunar Calendar (农历)
-- 24 Solar Terms (24节气) for Month Pillar
-- 12 Time Periods (十二时辰) for Hour Pillar
-- Ten Gods (十神) personality system
-
----
-
-## 🎓 LEARNING PROGRESS
-
-**Ben's Development Journey:**
-
-**Completed:**
-- ✅ Learn Streamlit deployment
-- ✅ Understand GitHub workflow (desktop + mobile)
-- ✅ Master QMDJ chart generation
-- ✅ Build professional modular app
-- ✅ JSON schema design (Universal Schema v2.0)
-- ✅ Mobile-responsive web apps
-- ✅ Python project structure
-- ✅ BaZi calculation integration
-
-**Ongoing:**
-- 🔄 Daily QMDJ practice
-- 🔄 Integration with AI analysis (Project 1)
-- 🔄 Pattern recognition and ML tracking
-
-**Skills Gained:**
-- ✅ GitHub file management (desktop + mobile browser)
-- ✅ Streamlit Cloud deployment
-- ✅ JSON schema design
-- ✅ Mobile-responsive web apps
-- ✅ Python project structure (modular architecture)
-- ✅ Debugging deployment issues (cache, rebuild, etc.)
-- ✅ BaZi calendar systems (Solar vs Lunar)
-
----
-
-## 🔗 PROJECT INTEGRATION
-
-### **Project 1 (Analyst Engine):**
-**Purpose:** AI-powered QMDJ + BaZi interpretation  
-**Input:** Universal Schema v2.0 JSON (from this app)  
-**Output:** Detailed analysis and recommendations  
-**Integration:** Claude provides interpretation based on Joey Yap methodology  
-
-### **Project 2 (Qi Men Pro - This Project):**
-**Purpose:** Data generation engine  
-**Input:** User's BaZi profile + Query (date/time/palace)  
-**Output:** QMDJ chart + Universal Schema v2.0 JSON  
-**Integration:** Feeds Project 1 for analysis  
-
-### **Workflow:**
-```
-1. User inputs query in Project 2 (Qi Men Pro)
-2. Generate QMDJ chart
-3. Export Universal Schema v2.0 JSON
-4. Feed JSON to Project 1 (Analyst Engine)
-5. Claude analyzes and provides recommendations
-6. Log outcome back to Project 2 for ML
-```
-
----
-
-## 📊 USAGE STATISTICS
-
-**As of 2025-12-29:**
-- **Total Charts Generated:** 1
-- **Success Rate:** 0.0% (pending first outcome)
-- **Pending Analyses:** 1
-- **Completed:** 0
-
-**Platform:**
-- Python: 94.3%
-- CSS: 5.7%
-
----
-
-## ✨ SUCCESS CRITERIA
-
-**Phase 2 Complete When:** ✅ ALL ACHIEVED!
-- [x] All 12+ files uploaded and working
-- [x] Can generate real QMDJ chart
-- [x] BaZi calculations functioning
-- [x] Export produces valid Universal Schema v2.0 JSON
-- [x] History tracking operational
-- [x] Mobile responsive on iPhone
-- [x] Desktop functional
-- [x] No errors in Streamlit Cloud logs
-- [x] Sidebar navigation working with 5 pages
-- [x] Chinese characters displaying correctly
+1. **Real QMDJ Calculations** - Integrate kinqimen library
+2. **Formation Detection** - Joey Yap books #64/#73
+3. **Improved Export** - Better JSON/CSV for Project 1
+4. **Persistent Storage** - Save profile to file (survives refresh)
+5. **ML Feedback Loop** - Outcome tracking system
+6. **Enhanced BaZi Analysis** - More detailed Day Master insights
 
 ---
 
 ## 🔄 CONTINUITY INSTRUCTIONS
 
-### **If Starting New Chat:**
-Say to Claude:
+### **Starting New Chat:**
 ```
 "Continue Qi Men Pro (Project 2) development - 
 check PROJECT_STATE.md in Espivc/qimen-pro repository.
-Phase 2 is COMPLETE and app is working.
-I want to discuss [your topic here]."
+Phase 3 in progress. I want to [your request here]."
 ```
 
+### **Key Files to Reference:**
+- `app.py` - Dashboard (v3 with native Streamlit components)
+- `pages/4_Settings.py` - Settings (v4 with callback pattern)
+- `PROJECT_STATE.md` - This file
+
 ### **Update This File When:**
-- ✅ Complete a major milestone (like Phase 3, if any)
-- ✅ Add new features
-- ✅ Fix bugs
-- ✅ Make important decisions
-- ✅ Change architecture
-- ✅ Update user profile or settings
+- ✅ Complete a feature
+- ✅ Fix a bug
+- ✅ Make architecture decisions
+- ✅ Change file versions
 
 ---
 
-## 🎯 NEXT POSSIBLE PHASES (Optional)
+## 📖 REFERENCE
 
-### **Phase 3: Advanced Features** (Future - Optional)
-**Potential enhancements:**
-- Minutes input for birth time precision
-- Full kinqimen library integration
-- Client database (multiple BaZi profiles)
-- Advanced Joey Yap formation analysis
-- Annual/monthly forecasts
-- Relationship compatibility
-- Auspicious date selection
+### **Joey Yap Books:**
+- #64: QMDJ Formations
+- #71: Sun Tzu Host/Guest Analysis
+- #72: Timing and Hour Selection
+- #73: Advanced Formations
 
-**Status:** 📋 Not started (Phase 2 is sufficient for now)
-
-### **Phase 4: Native iOS App** (Future - Advanced)
-**If needed for offline use:**
-- Rebuild in Swift or React Native
-- Apple Developer account ($99/year)
-- App Store submission
-- **Not necessary** - web app works great on iPhone!
-
-**Status:** 📋 Not planned (web app + "Add to Home Screen" is sufficient)
-
----
-
-## 📸 VERIFICATION SCREENSHOTS
-
-**Dashboard Working:** ✅ (2025-12-29)
-- Quick chart section visible
-- BaZi profile card showing
-- Stats overview displaying
-- Sidebar navigation present
-
-**Settings Page with BaZi Calculator:** ✅ (2025-12-29)
-- Birthday Calculator 生日计算器 functioning
-- Four Pillars calculation working
-- Chinese characters (庚, 金, 土, etc.) displaying
-- Profile preview showing correctly
+### **Technical Stack:**
+- Python 3.10+
+- Streamlit (Web UI)
+- kinqimen (QMDJ calculations - pending full integration)
+- Pandas (data handling)
 
 ---
 
 ## 🎊 PROJECT STATUS SUMMARY
 
-**PHASE 2: COMPLETE** ✅
+**Phase 3 Progress:** 40% complete
 
 **What Works:**
-- ✅ 5-page professional app
-- ✅ Real QMDJ chart generation (basic)
-- ✅ BaZi calculator (Four Pillars 四柱)
-- ✅ Chinese + English mixed language
-- ✅ Element color coding
-- ✅ JSON export (Universal Schema v2.0)
-- ✅ History tracking & ML database
-- ✅ Desktop + iPhone responsive
-- ✅ Dark theme with gold accents
+- ✅ Time text input (HH:MM precision)
+- ✅ Profile sync between pages
+- ✅ BaZi Calculator with callback save
+- ✅ Chinese hour display
+- ✅ Session state management
 
-**Ready For:**
-- ✅ Daily QMDJ practice
-- ✅ BaZi analysis for self/others
-- ✅ Integration with Project 1 (AI analysis)
-- ✅ Pattern tracking and ML
-
-**You now have a professional QMDJ + BaZi system!** 🌟
+**What's Next:**
+- 📋 Real QMDJ calculations
+- 📋 Formation detection
+- 📋 Export improvements
 
 ---
 
 **END OF PROJECT STATE**  
-*Last updated: 2025-12-29 by Claude (with Ben)*  
-*Status: 🟢 Phase 2 COMPLETE - App LIVE and WORKING*
+*Last updated: 2025-12-29*  
+*Status: 🟢 Phase 3 IN PROGRESS - Core fixes complete*
