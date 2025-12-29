@@ -1,6 +1,6 @@
 """
 Qi Men Pro - Settings Page
-Phase 3: Fixed save with proper session state update
+Phase 3: Fixed save functionality with proper state management
 """
 
 import streamlit as st
@@ -19,12 +19,23 @@ try:
 except:
     pass
 
-# Initialize session state if needed
+# Initialize ALL session state variables at the start
 if 'user_profile' not in st.session_state:
-    st.session_state.user_profile = {}
+    st.session_state.user_profile = {
+        "day_master": "庚 Geng",
+        "element": "Metal 金",
+        "polarity": "Yang",
+        "strength": "Weak",
+        "useful_gods": ["Earth", "Metal"],
+        "unfavorable": ["Fire", "Wood"],
+        "profile": "Pioneer 🎯 (Indirect Wealth 偏财)"
+    }
 
-if 'profile_saved' not in st.session_state:
-    st.session_state.profile_saved = False
+if 'calculated_bazi' not in st.session_state:
+    st.session_state.calculated_bazi = None
+
+if 'show_save_success' not in st.session_state:
+    st.session_state.show_save_success = False
 
 # ============ BAZI CONSTANTS ============
 
@@ -138,14 +149,36 @@ def calculate_full_bazi(year, month, day, hour, minute=0):
         "day_master_analysis": analyze_day_master(day_stem)
     }
 
+# ============ CALLBACK FUNCTIONS ============
+
+def save_profile_callback():
+    """Callback to save profile - runs before page rerenders"""
+    if st.session_state.calculated_bazi:
+        data = st.session_state.calculated_bazi
+        analysis = data['analysis']
+        
+        st.session_state.user_profile = {
+            "day_master": analysis['day_master'],
+            "element": analysis['element'],
+            "polarity": analysis['polarity'],
+            "strength": analysis['strength'],
+            "useful_gods": analysis['useful_gods'],
+            "unfavorable": analysis['unfavorable'],
+            "profile": analysis['profile'],
+            "birth_date": data['birth_date'],
+            "birth_time": data['birth_time'],
+            "four_pillars": data['bazi']
+        }
+        st.session_state.show_save_success = True
+
 # ============ PAGE CONTENT ============
 
 st.title("⚙️ Settings 设置")
 
-# Check if profile was just saved
-if st.session_state.profile_saved:
-    st.success("✅ Profile saved successfully! 档案已保存!")
-    st.session_state.profile_saved = False
+# Show save success message
+if st.session_state.show_save_success:
+    st.success("✅ Profile saved successfully! 档案已保存! Go to Dashboard to see updated profile.")
+    st.session_state.show_save_success = False
 
 tab1, tab2, tab3 = st.tabs(["🧮 BaZi Calculator", "👤 Profile", "🌐 Preferences"])
 
@@ -161,7 +194,8 @@ with tab1:
             "Select your birth date",
             value=date(1985, 1, 1),
             min_value=date(1900, 1, 1),
-            max_value=date.today()
+            max_value=date.today(),
+            key="birth_date_input"
         )
         st.info("💡 BaZi uses **Solar Calendar (阳历)**, NOT Lunar!")
     
@@ -170,7 +204,8 @@ with tab1:
         time_input = st.text_input(
             "Enter birth time (HH:MM)",
             value="12:00",
-            placeholder="e.g., 09:30, 14:45"
+            placeholder="e.g., 09:30, 14:45",
+            key="birth_time_input"
         )
         
         parsed_time = parse_time_input(time_input)
@@ -186,87 +221,84 @@ with tab1:
     
     st.markdown("---")
     
+    # Calculate button
     if st.button("🔮 Calculate BaZi 计算八字", type="primary", use_container_width=True):
         if parsed_time:
             hour, minute = parsed_time
             bazi = calculate_full_bazi(birth_date.year, birth_date.month, birth_date.day, hour, minute)
-            
-            st.success("✅ Calculation Complete! 计算完成!")
-            
-            # Display Four Pillars
-            st.markdown("### 📊 Your Four Pillars 四柱八字")
-            
-            pillar_cols = st.columns(4)
-            pillars = [
-                ("Hour 时柱", bazi["hour"]),
-                ("Day 日柱", bazi["day"]),
-                ("Month 月柱", bazi["month"]),
-                ("Year 年柱", bazi["year"])
-            ]
-            
-            for col, (name, pillar) in zip(pillar_cols, pillars):
-                with col:
-                    stem_elem, _ = STEM_ELEMENTS[pillar["stem"]]
-                    st.markdown(f"""
-                    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                                padding: 15px; border-radius: 10px; text-align: center;
-                                border: 1px solid #d4af37;">
-                        <p style="color: #d4af37; margin-bottom: 5px;">{name}</p>
-                        <p style="font-size: 1.8em; margin: 5px 0;">{pillar['stem'].split()[0]}</p>
-                        <p style="font-size: 1.8em; margin: 5px 0;">{pillar['branch'].split()[0]}</p>
-                        <p style="color: #888; font-size: 0.8em;">{stem_elem}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if "animal" in pillar:
-                        st.caption(pillar['animal'])
-            
-            # Analysis
-            st.markdown("---")
-            st.markdown("### 🌟 Day Master Analysis 日主分析")
-            
             analysis = bazi["day_master_analysis"]
             
-            a_col1, a_col2 = st.columns(2)
-            with a_col1:
-                st.markdown(f"""
-                **日主 Day Master:** {analysis['day_master']}  
-                **五行 Element:** {analysis['element']}  
-                **阴阳 Polarity:** {analysis['polarity']}  
-                **强弱 Strength:** {analysis['strength']}
-                """)
-            with a_col2:
-                st.markdown(f"""
-                **用神 Useful Gods:** {', '.join(analysis['useful_gods'])}  
-                **忌神 Unfavorable:** {', '.join(analysis['unfavorable'])}  
-                **性格 Profile:** {analysis['profile']}
-                """)
-            
-            # Store calculated data for save button
+            # Store in session state IMMEDIATELY
             st.session_state.calculated_bazi = {
                 "bazi": bazi,
                 "analysis": analysis,
                 "birth_date": birth_date.isoformat(),
                 "birth_time": f"{hour:02d}:{minute:02d}"
             }
-            
-            # Save button
-            st.markdown("---")
-            if st.button("💾 Save as My Profile 保存为我的档案", type="primary", use_container_width=True):
-                # Update session state with new profile
-                st.session_state.user_profile = {
-                    "day_master": analysis['day_master'],
-                    "element": analysis['element'],
-                    "polarity": analysis['polarity'],
-                    "strength": analysis['strength'],
-                    "useful_gods": analysis['useful_gods'],
-                    "unfavorable": analysis['unfavorable'],
-                    "profile": analysis['profile'],
-                    "birth_date": birth_date.isoformat(),
-                    "birth_time": f"{hour:02d}:{minute:02d}",
-                    "four_pillars": bazi
-                }
-                st.session_state.profile_saved = True
-                st.rerun()  # Force refresh to show success message
+    
+    # Display results if we have calculated data
+    if st.session_state.calculated_bazi:
+        data = st.session_state.calculated_bazi
+        bazi = data['bazi']
+        analysis = data['analysis']
+        
+        st.success("✅ Calculation Complete! 计算完成!")
+        
+        # Display Four Pillars
+        st.markdown("### 📊 Your Four Pillars 四柱八字")
+        
+        pillar_cols = st.columns(4)
+        pillars = [
+            ("Hour 时柱", bazi["hour"]),
+            ("Day 日柱", bazi["day"]),
+            ("Month 月柱", bazi["month"]),
+            ("Year 年柱", bazi["year"])
+        ]
+        
+        for col, (name, pillar) in zip(pillar_cols, pillars):
+            with col:
+                stem_elem, _ = STEM_ELEMENTS[pillar["stem"]]
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+                            padding: 15px; border-radius: 10px; text-align: center;
+                            border: 1px solid #d4af37;">
+                    <p style="color: #d4af37; margin-bottom: 5px;">{name}</p>
+                    <p style="font-size: 1.8em; margin: 5px 0;">{pillar['stem'].split()[0]}</p>
+                    <p style="font-size: 1.8em; margin: 5px 0;">{pillar['branch'].split()[0]}</p>
+                    <p style="color: #888; font-size: 0.8em;">{stem_elem}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if "animal" in pillar:
+                    st.caption(pillar['animal'])
+        
+        # Analysis
+        st.markdown("---")
+        st.markdown("### 🌟 Day Master Analysis 日主分析")
+        
+        a_col1, a_col2 = st.columns(2)
+        with a_col1:
+            st.markdown(f"""
+            **日主 Day Master:** {analysis['day_master']}  
+            **五行 Element:** {analysis['element']}  
+            **阴阳 Polarity:** {analysis['polarity']}  
+            **强弱 Strength:** {analysis['strength']}
+            """)
+        with a_col2:
+            st.markdown(f"""
+            **用神 Useful Gods:** {', '.join(analysis['useful_gods'])}  
+            **忌神 Unfavorable:** {', '.join(analysis['unfavorable'])}  
+            **性格 Profile:** {analysis['profile']}
+            """)
+        
+        # Save button with callback
+        st.markdown("---")
+        st.button(
+            "💾 Save as My Profile 保存为我的档案", 
+            type="primary", 
+            use_container_width=True,
+            on_click=save_profile_callback,
+            key="save_profile_btn"
+        )
 
 # ============ TAB 2: PROFILE ============
 with tab2:
@@ -321,8 +353,18 @@ with tab3:
     with col2:
         if st.button("🔄 Reset Profile"):
             st.session_state.user_profile = {}
-            st.success("✅ Reset!")
+            st.session_state.calculated_bazi = None
             st.rerun()
+
+# Debug section (can be removed in production)
+with st.expander("🔧 Debug: Current Session State"):
+    st.write("**user_profile:**")
+    st.json(st.session_state.user_profile)
+    st.write("**calculated_bazi:**")
+    if st.session_state.calculated_bazi:
+        st.json(st.session_state.calculated_bazi)
+    else:
+        st.write("None")
 
 st.markdown("---")
 st.caption("⚙️ Qi Men Pro Settings | Phase 3")
